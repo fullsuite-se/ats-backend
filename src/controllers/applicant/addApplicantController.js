@@ -7,14 +7,15 @@ const pool = require("../../config/db");
 const app = require("../../app");
 
 // VARIABLES USED WHEN APPLIED FROM SUITELIFER'S WEBSITE. 
-const CREATED_BY = process.env.CREATED_BY || "f1f63bd4-fa33-11ef-a725-0af0d960a833";
-const UPDATED_BY = process.env.CREATED_BY || "f1f63bd4-fa33-11ef-a725-0af0d960a833";
+const CREATED_BY = process.env.CREATED_BY;
+const UPDATED_BY = process.env.UPDATED_BY;
 
 const insertApplicant = async (applicant) => {
     const applicant_id = uuidv4();
     const contact_id = uuidv4();
     const tracking_id = uuidv4();
     const progress_id = uuidv4();
+    const interview_id = uuidv4();
     let connection;
 
     try { 
@@ -73,6 +74,12 @@ const insertApplicant = async (applicant) => {
             applicant.email_3 || null
         ];
         await connection.execute(sql, values);
+
+        //insert discussion (in interview table)
+        sql = `INSERT INTO ats_applicant_interviews (interview_id, tracking_id, interviewer_id, date_of_interview)
+                     VALUES (?, ?, ?, ?)`;
+        values = [interview_id, tracking_id, null, null];
+        await connection.execute(sql, values); 
 
         // Commit the transaction if all queries succeed
         await connection.commit();
@@ -152,6 +159,7 @@ const compare = (applicant, applicantsFromDB) => {
 
     return possibleDuplicates;
 };
+
 // Check for duplicates
 exports.checkDuplicates = async (req, res) => {
     const applicant = JSON.parse(req.body.applicant);
@@ -163,6 +171,7 @@ exports.checkDuplicates = async (req, res) => {
     }
     return res.json({ isDuplicate: false, message: "no duplicates detected" });
 };
+
 exports.addApplicant = async (req, res) => {
     try {
         console.log("Request body:", req.body); // Log the entire request body
@@ -186,6 +195,7 @@ exports.addApplicant = async (req, res) => {
         res.status(500).json({ message: "Error processing applicant", error: error.message });
     }
 };
+
 exports.uploadApplicants = [
     upload.none(), // Middleware to parse FormData
     async (req, res) => {
