@@ -76,6 +76,7 @@ exports.getAllApplicants = async (req, res) => {
                 a.middle_name, 
                 a.last_name, 
                 a.date_created, 
+                t.tracking_id, 
                 p.status, 
                 p.progress_id,
                 j.title
@@ -150,58 +151,6 @@ exports.getAllApplicantsPagination = async (req, res) => {
     }
 };
 
-// applicants/filter
-// exports.getApplicantsFilter = async (req, res) => {
-//     const filters = req.query;
-//     const conditions = [];
-//     const values = [];
-
-//     console.log(filters);
-    
-//     if (filters.month){
-//         conditions.push("MONTHNAME(a.date_created)= ?");
-//         values.push(filters.month)
-//     }
-//     if (filters.year) {
-//         conditions.push("YEAR(a.date_created) = ?");
-//         values.push(filters.year);
-//     }
-//     if (filters.position) {
-//         conditions.push("j.title LIKE ?");
-//         values.push(`%${filters.position}%`);
-//     }
-//     //then the status
-//     if (filters.status) {
-//         const statusArray = Array.isArray(filters.status) ? filters.status : [filters.status];
-//         const placeholders = statusArray.map(() => "?").join(", ");
-//         conditions.push(`p.status IN (${placeholders})`);
-//         values.push(...statusArray);
-//     }
-
-//     const sql = `
-//         SELECT
-//             a.*,
-//             c.*, 
-//             p.stage, 
-//             p.status, 
-//             j.title, 
-//             p.progress_id
-//         FROM ats_applicants a
-//         LEFT JOIN ats_contact_infos c
-//             ON a.applicant_id = c.applicant_id
-//         LEFT JOIN ats_applicant_trackings t
-//             ON a.applicant_id = t.applicant_id
-//         LEFT JOIN ats_applicant_progress p
-//             ON t.progress_id = p.progress_id
-//         LEFT JOIN sl_company_jobs j
-//              ON t.position_id = j.job_id
-//         WHERE ${conditions.join(" AND ")}
-//     `;
-
-//     const [results] = await pool.execute(sql, values);
-
-//     return res.json(results)
-// }
 
 exports.getApplicantsFilter = async (req, res) => {
     const filters = req.query;
