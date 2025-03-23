@@ -64,7 +64,10 @@ exports.getInterview = async (req, res) => {
             WHERE ai.tracking_id = ?
             GROUP BY ai.interview_id, ai.tracking_id, ai.date_of_interview, ai.created_at,
                      u.user_id, u.first_name, u.middle_name, u.last_name, u.personal_email, u.contact_number,
-                     ua.user_email, ua.is_deactivated;
+                     ua.user_email, ua.is_deactivated
+            ORDER BY ai.created_at ASC;
+            
+
         `;
         
         const values = [tracking_id];
@@ -116,7 +119,6 @@ exports.addNote = async (req, res) => {
         `;
         const values = [note_id, interview.interview_id, interview.note_type, interview.note_body];
         
-
         await pool.execute(sql, values);
         res.status(201).json({ message: "interview note added" });
     } catch (error) {
