@@ -10,13 +10,15 @@ const emailController = require("../email/emailController");
 
 // VARIABLES USED WHEN APPLIED FROM SUITELIFER'S WEBSITE. 
 const CREATED_BY = process.env.CREATED_BY;
-const UPDATED_BY = process.env.CREATED_BY;
+const UPDATED_BY = process.env.UPDATED_BY;
+
 
 const insertApplicant = async (applicant) => {
     const applicant_id = uuidv4();
     const contact_id = uuidv4();
     const tracking_id = uuidv4();
     const progress_id = uuidv4();
+    const interview_id = uuidv4();
     let connection;
 
     try {
@@ -75,6 +77,12 @@ const insertApplicant = async (applicant) => {
             applicant.email_3 || null
         ];
         await connection.execute(sql, values);
+
+        //insert discussion (in interview table)
+        sql = `INSERT INTO ats_applicant_interviews (interview_id, tracking_id, interviewer_id, date_of_interview)
+                     VALUES (?, ?, ?, ?)`;
+        values = [interview_id, tracking_id, null, null];
+        await connection.execute(sql, values); 
 
         // Commit the transaction if all queries succeed
         await connection.commit();
