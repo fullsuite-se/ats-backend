@@ -227,7 +227,7 @@ exports.getApplicant = async (req, res) => {
                 a.birth_date,
                 a.discovered_at,
                 a.cv_link,
-                a.date_created AS applicant_created_at,
+
                 
                 c.mobile_number_1,
                 c.mobile_number_2,
@@ -237,7 +237,7 @@ exports.getApplicant = async (req, res) => {
                 
                 t.tracking_id,
                 t.test_result,
-                t.created_at AS tracking_created_at,
+                t.created_at AS applicant_created_at,
                 t.created_by AS tracking_created_by,
                 t.updated_at AS tracking_updated_at,
                 t.updated_by AS tracking_updated_by,
