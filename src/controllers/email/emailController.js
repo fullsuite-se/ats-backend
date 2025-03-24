@@ -76,19 +76,20 @@ const emailSignature = (userData) => {
     `;
 };
 
+
 exports.addEmailTemplates = async (req, res) => {
     try {
         const data = req.body;
         const template_id = uuidv4();
-    
+
         const sql = `
             INSERT INTO ats_email_templates (template_id, company_id, title, subject, body)
             VALUES (?, ?, ?, ?, ?);
         `;
-    
-        const values = [template_id, data.company_id, data.title, data.subject, data.body]; 
+
+        const values = [template_id, data.company_id, data.title, data.subject, data.body];
         await pool.execute(sql, values);
-        res.status(200).json({message: "template added"})
+        res.status(200).json({ message: "template added" })
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -106,7 +107,6 @@ exports.emailTemplates = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
 
 exports.emailApplicant = async (req, res) => {
     try {
@@ -147,4 +147,33 @@ exports.emailApplicant = async (req, res) => {
         console.error("Error sending email:", error);
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
-}; 
+};
+
+exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
+    // we'll use a default user. 
+    // VARIABLES USED WHEN APPLIED FROM SUITELIFER'S WEBSITE. 
+    const USER_ID = process.env.USER_ID;
+
+    try {
+        const userData = await getUserInfo(USER_ID);
+
+        const recipientEmails = [applicant.email_1];
+        const emailSignatureString = emailSignature(userData);
+        email_body = email_body + emailSignatureString;
+
+        // Create mail options
+        const mailOptions = {
+            from: `"FullSuite" <${userData.user_email}>`,
+            to: recipientEmails,
+            subject: email_subject,
+            html: email_body,
+        };
+
+        //create transporter
+        const transporter = createTransporter({ email_user: userData.user_email, email_pass: userData.app_password })
+        const info = await transporter.sendMail(mailOptions);
+        return true
+    } catch (error) {
+        console.error("Error sending email:", error);
+    }
+}
