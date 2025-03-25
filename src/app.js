@@ -16,8 +16,10 @@ app.use(express.json());
 
 // Disable CORS protection from this react project origin
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
+//disable cors protection from FS website. 
+const CLIENT_ORIGIN_FS = process.env.CLIENT_ORIGIN_FS; 
 app.use(
-  cors({ origin: [CLIENT_ORIGIN, "http://localhost:5173"], credentials: true })
+  cors({ origin: [CLIENT_ORIGIN, CLIENT_ORIGIN_FS, "http://localhost:5173"], credentials: true })
 );
 
 // Cron Jobs
