@@ -1,5 +1,34 @@
 const pool = require("../../config/db");
 
+// const f_applicationsReceived = async () => {
+//     try {
+//         const [overall] = await pool.execute(
+//             `SELECT COUNT(*) AS total_applications FROM ats_applicant_trackings`
+//         );
+        
+//         const [breakdown] = await pool.execute(
+//             `SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count 
+//             FROM ats_applicant_trackings 
+//             WHERE created_at >= (
+//                 SELECT MAX(created_at) FROM ats_applicant_trackings
+//             ) - INTERVAL 3 MONTH
+//             GROUP BY month 
+//             ORDER BY month DESC`
+//         );
+
+//         const [allCountPerMonth] = await pool.execute(
+//             `SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count 
+//             FROM ats_applicant_trackings 
+//             GROUP BY month 
+//             ORDER BY month DESC`
+//         ); 
+        
+//         return { total: overall[0].total_applications, breakdown: breakdown, allCountPerMonth: allCountPerMonth};
+//     } catch (error) {
+//         console.error(error);
+//         return null;
+//     }
+// };
 const f_applicationsReceived = async () => {
     try {
         const [overall] = await pool.execute(
@@ -9,12 +38,21 @@ const f_applicationsReceived = async () => {
         const [breakdown] = await pool.execute(
             `SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count 
             FROM ats_applicant_trackings 
-            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) 
+            WHERE created_at >= (
+                SELECT MAX(created_at) FROM ats_applicant_trackings
+            ) - INTERVAL 3 MONTH
             GROUP BY month 
             ORDER BY month DESC`
         );
+
+        const [allCountPerMonth] = await pool.execute(
+            `SELECT DATE_FORMAT(created_at, '%m') AS month, COUNT(*) AS count 
+            FROM ats_applicant_trackings 
+            GROUP BY month 
+            ORDER BY month DESC`
+        ); 
         
-        return { total: overall[0].total_applications, breakdown };
+        return { total: overall[0].total_applications, breakdown: breakdown, allCountPerMonth: allCountPerMonth};
     } catch (error) {
         console.error(error);
         return null;
