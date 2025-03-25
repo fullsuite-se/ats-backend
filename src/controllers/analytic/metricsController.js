@@ -121,7 +121,6 @@ const f_InternalExternalHires = async () => {
     }
 };
 
-
 const f_dropOffRate = async () => {
     try {
         // Get total number of applicants
@@ -129,17 +128,25 @@ const f_dropOffRate = async () => {
             `SELECT COUNT(*) AS totalApplicants FROM ats_applicant_trackings`
         );
 
-        // Get total drop-offs
+        if (totalApplicants === 0) {
+            return {
+                overallDropOffRate: '0%',
+                monthlyDropOffs: [],
+                allMonthlyDropOffs: []
+            };
+        }
+
+        // Get total drop-offs for overall rate
         const [[{ totalDropOffs }]] = await pool.execute(
             `SELECT COUNT(*) AS totalDropOffs 
-            FROM ats_applicant_progress 
-            WHERE status IN ('WITHDREW_APPLICATION', 'BLACKLISTED', 'NOT_FIT')`
+                FROM ats_applicant_trackings a
+                JOIN sl_company_jobs j ON a.position_id = j.job_id
+                JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
+            WHERE p.status IN ('WITHDREW_APPLICATION', 'BLACKLISTED', 'NOT_FIT')`
         );
 
         // Calculate overall drop-off rate
-        const overallDropOffRate = totalApplicants
-            ? ((totalDropOffs / totalApplicants) * 100).toFixed(2) + '%'
-            : '0%';
+        const overallDropOffRate = ((totalDropOffs / totalApplicants) * 100).toFixed(2) + '%';
 
         // Get drop-off rate for the last 3 months
         const [monthlyDropOffs] = await pool.execute(
@@ -151,9 +158,22 @@ const f_dropOffRate = async () => {
             ORDER BY month DESC`
         );
 
+        // Get drop-off rate for all months
+        const [allMonthlyDropOffs] = await pool.execute(
+            `SELECT DATE_FORMAT(updated_at, '%Y-%m') AS month, COUNT(*) AS count
+            FROM ats_applicant_progress 
+            WHERE status IN ('WITHDREW_APPLICATION', 'BLACKLISTED', 'NOT_FIT')
+            GROUP BY month
+            ORDER BY month DESC`
+        );
+
         return {
             overallDropOffRate,
             monthlyDropOffs: monthlyDropOffs.map(row => ({
+                month: row.month,
+                dropOffRate: ((row.count / totalApplicants) * 100).toFixed(2) + '%'
+            })),
+            allMonthlyDropOffs: allMonthlyDropOffs.map(row => ({
                 month: row.month,
                 dropOffRate: ((row.count / totalApplicants) * 100).toFixed(2) + '%'
             }))
@@ -164,6 +184,7 @@ const f_dropOffRate = async () => {
         return null;
     }
 };
+
 
 exports.getMetrics = async (req, res) => {
     try {
@@ -183,7 +204,6 @@ exports.getMetrics = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
-
 
 // endpoint for getting the count of applicant from FS website
 exports.getFSApplicationCount = async (req, res) => {
