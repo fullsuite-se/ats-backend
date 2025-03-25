@@ -12,7 +12,9 @@ const positionModel = require("../../models/position/positionModel");
 const CREATED_BY = process.env.CREATED_BY;
 const UPDATED_BY = process.env.UPDATED_BY;
 
-const insertApplicant = async (applicant) => {
+
+// TODO when applied from ATS, add the user_id to created_by and updated_by
+const insertApplicant = async (applicant, user_id=null) => {
     const applicant_id = uuidv4();
     const contact_id = uuidv4();
     const tracking_id = uuidv4();
@@ -22,7 +24,7 @@ const insertApplicant = async (applicant) => {
 
     try {
         connection = await pool.getConnection();
-        await connection.beginTransaction(); // Start transaction
+        await connection.beginTransaction();
 
         // Insert into ats_applicant_progress
         let sql = `INSERT INTO ats_applicant_progress (progress_id, stage, status) VALUES (?, ?, ?)`;
@@ -34,21 +36,20 @@ const insertApplicant = async (applicant) => {
         await connection.execute(sql, values);
 
         // Insert into ats_applicant_trackings
-        sql = `INSERT INTO ats_applicant_trackings (tracking_id, applicant_id, progress_id, created_at, created_by, updated_by, test_result,  applied_source, referrer_name, company_id, position_id, test_result) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        sql = `INSERT INTO ats_applicant_trackings (tracking_id, applicant_id, progress_id, created_at, created_by, updated_by, test_result,  applied_source, referrer_name, company_id, position_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         values = [
             tracking_id,
             applicant_id,
             progress_id,
             applicant.date_applied || new Date(), //since we use date_applied in payload. 
-            applicant.created_by || CREATED_BY,
-            applicant.updated_by || UPDATED_BY,
+            applicant.created_by || user_id || CREATED_BY,
+            applicant.updated_by || user_id||  UPDATED_BY,
             applicant.test_result || null, 
             applicant.applied_source || null,
             applicant.referrer_name || null,
             "468eb32f-f8c1-11ef-a725-0af0d960a833", //company id
             applicant.position_id,
-            applicant.test_result
         ];
         await connection.execute(sql, values);
 
@@ -105,7 +106,6 @@ const insertApplicant = async (applicant) => {
     }
 };
 
-// Get all applicants from the database
 const getAllApplicants = async () => {
     const sql = `
         SELECT *
@@ -168,7 +168,6 @@ const compare = (applicant, applicantsFromDB) => {
     return possibleDuplicates;
 };
 
-// Check for duplicates
 exports.checkDuplicates = async (req, res) => {
     const applicant = JSON.parse(req.body.applicant);
     const applicantsFromDB = await getAllApplicants();
@@ -180,6 +179,7 @@ exports.checkDuplicates = async (req, res) => {
     return res.json({ isDuplicate: false, message: "no duplicates detected" });
 };
 
+// TODO when applied from ATS, add the user_id to created_by and updated_by
 exports.addApplicant = async (req, res) => {
     try {
         console.log("Request body:", req.body); // Log the entire request body
@@ -204,6 +204,8 @@ exports.addApplicant = async (req, res) => {
     }
 };
 
+
+// TODO when applied from ATS, add the user_id to created_by and updated_by
 exports.uploadApplicants = [
     upload.none(),
     async (req, res) => {
