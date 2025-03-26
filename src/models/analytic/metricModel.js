@@ -95,6 +95,13 @@ const f_topJobs = async () => {
 
 const f_InternalExternalHires = async () => {
     try {
+        const [[{ totalHires }]] = await pool.execute(
+            `SELECT COUNT(*) AS totalHires 
+            FROM ats_applicant_trackings a 
+            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
+            WHERE p.status = 'JOB_OFFER_ACCEPTED'`
+        ); 
+
         const [internal] = await pool.execute(
             `SELECT COUNT(*) AS internal_hires 
             FROM ats_applicant_trackings a 
@@ -111,9 +118,28 @@ const f_InternalExternalHires = async () => {
             AND a.applied_source IN ('LINKEDIN', 'SOCIAL_MEDIA', 'SUITELIFE')`
         );
 
+        // TODO breakdown of sources. 
+        const [breakdown] = await pool.execute(
+            `
+                SELECT a.applied_source, COUNT(*) AS count
+                FROM ats_applicant_trackings a 
+                JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
+                GROUP BY a.applied_source
+            `
+        );
+
         return {
             internal: internal[0].internal_hires,
-            external: external[0].external_hires
+            external: external[0].external_hires, 
+            internalRate: (internal[0].internal_hires / totalHires) * 100,
+            externalRate: (external[0].external_hires / totalHires) * 100, 
+            totalHires: totalHires, 
+            breakdown: breakdown.map(row => ({
+                applied_source: row.applied_source, 
+                count: row.count, 
+                rate: (row.count / totalHires) * 100, 
+            }))
+          
         };
     } catch (error) {
         console.error(error);
