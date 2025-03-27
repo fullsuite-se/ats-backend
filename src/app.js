@@ -63,6 +63,10 @@ const statusRoutes = require("./routes/status/statusRoutes");
 // upload
 const uploadRoutes = require("./routes/upload/uploadRoutes");
 
+// configuration
+const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
+
+
 // Routes
 app.use("/applicants", applicantRoutes);
 app.use("/applicants/add", addApplicantRoutes);
@@ -80,6 +84,7 @@ app.use("/company", positionRoutes);
 app.use("/user", userRoutes);
 app.use("/status", statusRoutes);
 app.use("/upload", uploadRoutes);
+app.use('/user-configuration', userConfigurationRoutes); 
 
 const verifyToken = require("./middlewares/verifyToken");
 
