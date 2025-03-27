@@ -24,8 +24,17 @@ exports.searchApplicant = async (req, res) => {
             values.push(`%${filters.position}%`);
         }
         if (filters.searchQuery) {
-            conditions.push("(a.first_name LIKE ? OR a.middle_name LIKE ? OR a.last_name LIKE ?)");
-            values.push(`%${filters.searchQuery}%`, `%${filters.searchQuery}%`, `%${filters.searchQuery}%`);
+            conditions.push(`(
+                a.first_name LIKE ?
+                 OR a.middle_name LIKE ? 
+                 OR a.last_name LIKE ?
+                 OR c.email_1 LIKE ?
+                 OR c.email_2 LIKE ?
+                 OR c.email_3 LIKE ?
+                 OR c.mobile_number_1 LIKE ?
+                 OR c.mobile_number_2 LIKE ? 
+                 )`);
+            values.push(`%${filters.searchQuery}%`, `%${filters.searchQuery}%`, `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`);
         }
         if (filters.status) {
             const statusArray = Array.isArray(filters.status) ? filters.status : [filters.status];
@@ -47,13 +56,15 @@ exports.searchApplicant = async (req, res) => {
                 p.status, 
                 j.title, 
                 p.progress_id
-            FROM ats_applicants a
-            LEFT JOIN ats_applicant_trackings t
-                ON a.applicant_id = t.applicant_id
-            LEFT JOIN ats_applicant_progress p
-                ON t.progress_id = p.progress_id
-            LEFT JOIN sl_company_jobs j
-                ON t.position_id = j.job_id
+                FROM ats_applicants a
+                LEFT JOIN ats_contact_infos c
+                    ON a.applicant_id = c.applicant_id
+                LEFT JOIN ats_applicant_trackings t
+                    ON a.applicant_id = t.applicant_id
+                LEFT JOIN ats_applicant_progress p
+                    ON t.progress_id = p.progress_id
+                LEFT JOIN sl_company_jobs j
+                    ON t.position_id = j.job_id
             ${whereClause}
         `;
 
