@@ -108,27 +108,37 @@ exports.topAppliedJobs = async (req, res) => {
 exports.applicationTrend = async (req, res) => {
     try {
         let sql = `
-            SELECT MONTHNAME(t.created_at) as month, COUNT(*) as count
+            SELECT 
+                YEAR(t.created_at) AS year, 
+                MONTHNAME(t.created_at) AS month, 
+                MONTH(t.created_at) AS month_number, 
+                COUNT(*) AS count
             FROM ats_applicant_trackings t
-            GROUP BY MONTHNAME(t.created_at)
+            GROUP BY year, month, month_number
+            ORDER BY year, month_number
         `;
 
         const [trend] = await pool.execute(sql);
 
-        sql = `
-            SELECT COUNT(*) AS total 
-            FROM ats_applicant_trackings 
-        `;
+        // Transform data into the desired format
+        const result = {};
+        trend.forEach(({ year, month, count }) => {
+            if (!result[year]) {
+                result[year] = [];
+            }
+            result[year].push({ month, count });
+        });
 
-        let [total] = await pool.execute(sql);
-        total = total[0]?.total;
+        // Fetch total applications count
+        sql = `SELECT COUNT(*) AS total FROM ats_applicant_trackings`;
+        const [[{ total }]] = await pool.execute(sql);
 
-        res.status(200).json({message: "okay", data: {total: total, trend: trend}});
+        res.status(200).json({ message: "okay", data: { total, trend: result } });
     } catch (error) {
-        res.status(500).json({ message: error.message});
+        console.error("Error in applicationTrend:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
-}
-
+};
 
 
 exports.applicantSources = async (req, res) => {
@@ -169,9 +179,6 @@ exports.applicantSources = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
-
-
-
 
 exports.dropoffRate = async (req, res) => {
     try {
