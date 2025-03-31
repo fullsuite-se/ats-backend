@@ -1,0 +1,1371 @@
+﻿-- MySQL Workbench Forward Engineering
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+-- -----------------------------------------------------
+-- Schema mydb
+-- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Schema dyd5mmbwqh2jzcaq
+-- -----------------------------------------------------
+-- -----------------------------------------------------
+-- Schema dyd5mmbwqh2jzcaq
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `dyd5mmbwqh2jzcaq` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci ;
+USE `dyd5mmbwqh2jzcaq` ;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`admin_accounts`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`admin_accounts` (
+  `admin_id` VARCHAR(50) NOT NULL,
+  `admin_email` VARCHAR(100) NOT NULL,
+  `admin_password` VARCHAR(100) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  PRIMARY KEY (`admin_id`),
+  UNIQUE INDEX `UNIQUE_ADMIN_EMAIL` (`admin_email` ASC) VISIBLE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`services`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`services` (
+  `service_id` CHAR(36) NOT NULL,
+  `service_name` VARCHAR(50) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  PRIMARY KEY (`service_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`admin_activity_logs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`admin_activity_logs` (
+  `activity_desc` TEXT NOT NULL,
+  `activity_time` TIMESTAMP NOT NULL DEFAULT now(),
+  `service_id` CHAR(36) NOT NULL,
+  `admin_id` CHAR(36) NULL DEFAULT NULL,
+  `action` ENUM('Create', 'Update', 'Delete') NOT NULL,
+  `table_name` VARCHAR(255) NOT NULL,
+  `record_id` CHAR(36) NOT NULL,
+  `description` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `activity_logs_admin_id` (`admin_id` ASC) VISIBLE,
+  INDEX `service_id` (`service_id` ASC) VISIBLE,
+  CONSTRAINT `activity_logs_admin_id`
+    FOREIGN KEY (`admin_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`admin_accounts` (`admin_id`)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL,
+  CONSTRAINT `admin_activity_logs_ibfk_1`
+    FOREIGN KEY (`service_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`services` (`service_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`admin_auth_logs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`admin_auth_logs` (
+  `admin_id` CHAR(36) NOT NULL,
+  `login_timestamp` TIMESTAMP NOT NULL,
+  `logout_timestamp` TIMESTAMP NULL DEFAULT NULL,
+  `device_used` ENUM('Desktop', 'Tablet', 'Mobile') NULL DEFAULT NULL,
+  `ip_address` CHAR(50) NULL DEFAULT NULL,
+  `city` VARCHAR(255) NULL DEFAULT NULL,
+  `region` VARCHAR(255) NULL DEFAULT NULL,
+  `country` VARCHAR(255) NULL DEFAULT NULL,
+  INDEX `admin_id` (`admin_id` ASC) VISIBLE,
+  CONSTRAINT `admin_auth_logs_ibfk_1`
+    FOREIGN KEY (`admin_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`admin_accounts` (`admin_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`admin_infos`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`admin_infos` (
+  `admin_id` VARCHAR(50) NOT NULL,
+  `first_name` VARCHAR(50) NOT NULL,
+  `middle_name` VARCHAR(50) NULL DEFAULT NULL,
+  `last_name` VARCHAR(50) NOT NULL,
+  `extension_name` VARCHAR(5) NULL DEFAULT NULL,
+  `contact_number` VARCHAR(13) NOT NULL,
+  `admin_key` VARCHAR(50) NOT NULL,
+  INDEX `admin_id_fk` USING BTREE (`admin_id`) VISIBLE,
+  CONSTRAINT `admin_id_if_fk`
+    FOREIGN KEY (`admin_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`admin_accounts` (`admin_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_accounts`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (
+  `user_id` CHAR(36) NOT NULL,
+  `user_email` VARCHAR(100) NOT NULL,
+  `user_password` VARCHAR(100) NOT NULL,
+  `user_key` VARCHAR(50) NOT NULL,
+  `is_deactivated` TINYINT NULL DEFAULT '0',
+  `created_at` TIMESTAMP NOT NULL,
+  PRIMARY KEY (`user_id`),
+  UNIQUE INDEX `UNIQUE_USER_EMAIL` (`user_email` ASC) VISIBLE,
+  UNIQUE INDEX `UNIQUE_USER_KEY` (`user_key` ASC) VISIBLE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_applicant_progress`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_applicant_progress` (
+  `progress_id` CHAR(36) NOT NULL,
+  `stage` ENUM('PRE_SCREENING', 'INTERVIEW_SCHEDULE', 'JOB_OFFER', 'UNSUCCESSFUL') NOT NULL,
+  `status` ENUM('TEST_SENT', 'INTERVIEW_SCHEDULE_SENT', 'FIRST_INTERVIEW', 'SECOND_INTERVIEW', 'THIRD_INTERVIEW', 'FOURTH_INTERVIEW', 'FOLLOW_UP_INTERVIEW', 'FOR_JOB_OFFER', 'JOB_OFFER_REJECTED', 'JOB_OFFER_ACCEPTED', 'WITHDREW_APPLICATION', 'BLACKLISTED', 'NOT_FIT') NOT NULL,
+  `blacklisted_type` ENUM('SOFT', 'HARD') NULL DEFAULT NULL,
+  `reason` ENUM('DID_NOT_TAKE_TEST', 'NO_SHOW', 'CULTURE_MISMATCH', 'EXPECTED_SALARY_MISMATCH', 'WORKING_SCHEDULE_MISMATCH', 'OTHER_REASONS') NULL DEFAULT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT now(),
+  PRIMARY KEY (`progress_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`companies`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`companies` (
+  `company_id` CHAR(36) NOT NULL,
+  `company_email` VARCHAR(100) NOT NULL,
+  `date_added` TIMESTAMP NOT NULL DEFAULT now(),
+  `status` ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+  PRIMARY KEY (`company_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`job_setup`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`job_setup` (
+  `setup_id` CHAR(36) NOT NULL,
+  `setup_name` VARCHAR(20) NULL DEFAULT NULL,
+  PRIMARY KEY (`setup_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_job_industries`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_job_industries` (
+  `job_ind_id` CHAR(36) NOT NULL,
+  `name` VARCHAR(50) NOT NULL,
+  `company_id` CHAR(35) NOT NULL,
+  `image_url` TEXT NULL DEFAULT NULL,
+  `assessment_url` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`job_ind_id`),
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `sl_job_industries_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `sl_job_industries_ibfk_2`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_company_jobs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_company_jobs` (
+  `job_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `title` VARCHAR(60) NOT NULL,
+  `description` TEXT NOT NULL,
+  `employment_type` ENUM('Full-time', 'Part-time', 'Contract') NOT NULL,
+  `setup_id` CHAR(36) NOT NULL,
+  `is_open` TINYINT(1) NOT NULL,
+  `industry_id` CHAR(36) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`job_id`),
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `setup_id` (`setup_id` ASC) VISIBLE,
+  INDEX `industry_id` (`industry_id` ASC) VISIBLE,
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  INDEX `updated_by` (`updated_by` ASC) VISIBLE,
+  CONSTRAINT `sl_company_jobs_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `sl_company_jobs_ibfk_2`
+    FOREIGN KEY (`setup_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`job_setup` (`setup_id`),
+  CONSTRAINT `sl_company_jobs_ibfk_3`
+    FOREIGN KEY (`industry_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_job_industries` (`job_ind_id`),
+  CONSTRAINT `sl_company_jobs_ibfk_4`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `sl_company_jobs_ibfk_5`
+    FOREIGN KEY (`updated_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_applicant_trackings`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_applicant_trackings` (
+  `tracking_id` CHAR(36) NOT NULL,
+  `applicant_id` CHAR(36) NOT NULL,
+  `progress_id` CHAR(36) NOT NULL,
+  `test_result` TEXT NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT now(),
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT now(),
+  `updated_by` CHAR(36) NOT NULL,
+  `applied_source` ENUM('Indeed', 'LinkedIn', 'Social Media', 'Suitelife', 'Walk In', 'Referral') NULL DEFAULT NULL,
+  `referrer_id` CHAR(36) NULL DEFAULT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `position_id` CHAR(36) NOT NULL,
+  PRIMARY KEY (`tracking_id`),
+  UNIQUE INDEX `applicant_id` (`applicant_id` ASC) VISIBLE,
+  INDEX `referrer_id` (`referrer_id` ASC) VISIBLE,
+  INDEX `progress_id` (`progress_id` ASC) VISIBLE,
+  INDEX `position_id` (`position_id` ASC) VISIBLE,
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  INDEX `updated_by` (`updated_by` ASC) VISIBLE,
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  CONSTRAINT `ats_applicant_trackings_ibfk_1`
+    FOREIGN KEY (`referrer_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `ats_applicant_trackings_ibfk_2`
+    FOREIGN KEY (`progress_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`ats_applicant_progress` (`progress_id`),
+  CONSTRAINT `ats_applicant_trackings_ibfk_3`
+    FOREIGN KEY (`position_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_company_jobs` (`job_id`),
+  CONSTRAINT `ats_applicant_trackings_ibfk_4`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `ats_applicant_trackings_ibfk_5`
+    FOREIGN KEY (`updated_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `ats_applicant_trackings_ibfk_6`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_interviews_notes`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_interviews_notes` (
+  `note_id` CHAR(36) NOT NULL,
+  `interview_id` CHAR(36) NOT NULL,
+  `note_type` ENUM('First Interview', 'Second Interview', 'Third Interview', 'Fourth Interview', 'Follow-Up Interview') NOT NULL,
+  `note_body` TEXT NOT NULL,
+  `noted_at` TIMESTAMP NULL DEFAULT now(),
+  PRIMARY KEY (`note_id`),
+  UNIQUE INDEX `interview_id` (`interview_id` ASC) VISIBLE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_applicant_interviews`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_applicant_interviews` (
+  `interview_id` CHAR(36) NOT NULL,
+  `tracking_id` CHAR(36) NOT NULL,
+  `interviewer_id` CHAR(36) NOT NULL,
+  `date_of_interview` DATETIME NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT now(),
+  PRIMARY KEY (`interview_id`),
+  INDEX `tracking_id` (`tracking_id` ASC) VISIBLE,
+  INDEX `interviewer_id` (`interviewer_id` ASC) VISIBLE,
+  CONSTRAINT `ats_applicant_interviews_ibfk_1`
+    FOREIGN KEY (`tracking_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`ats_applicant_trackings` (`tracking_id`),
+  CONSTRAINT `ats_applicant_interviews_ibfk_2`
+    FOREIGN KEY (`interview_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`ats_interviews_notes` (`interview_id`),
+  CONSTRAINT `ats_applicant_interviews_ibfk_3`
+    FOREIGN KEY (`interviewer_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_applicants`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_applicants` (
+  `applicant_id` CHAR(36) NOT NULL,
+  `first_name` VARCHAR(50) NOT NULL,
+  `middle_name` VARCHAR(50) NULL DEFAULT NULL,
+  `last_name` VARCHAR(50) NOT NULL,
+  `contact_id` CHAR(36) NOT NULL,
+  `gender` ENUM('Male', 'Female', 'Others') NOT NULL,
+  `discovered_at` ENUM('Referral', 'Website', 'Social Media', 'Podcast', 'Career Fair (Startup Caravan, University Visit)') NOT NULL,
+  `cv_link` TEXT NULL DEFAULT NULL,
+  `date_created` TIMESTAMP NOT NULL DEFAULT now(),
+  PRIMARY KEY (`applicant_id`),
+  CONSTRAINT `ats_applicants_ibfk_1`
+    FOREIGN KEY (`applicant_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`ats_applicant_trackings` (`applicant_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_contact_infos`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_contact_infos` (
+  `contact_id` CHAR(36) NOT NULL,
+  `applicant_id` CHAR(36) NOT NULL,
+  `mobile_number_1` VARCHAR(15) NULL DEFAULT NULL,
+  `mobile_number_2` VARCHAR(15) NULL DEFAULT NULL,
+  `email_1` VARCHAR(50) NOT NULL,
+  `email_2` VARCHAR(50) NULL DEFAULT NULL,
+  `email_3` VARCHAR(50) NULL DEFAULT NULL,
+  PRIMARY KEY (`contact_id`),
+  UNIQUE INDEX `email_1` (`email_1` ASC) VISIBLE,
+  UNIQUE INDEX `email_2` (`email_2` ASC) VISIBLE,
+  UNIQUE INDEX `email_3` (`email_3` ASC) VISIBLE,
+  INDEX `applicant_id` (`applicant_id` ASC) VISIBLE,
+  CONSTRAINT `ats_contact_infos_ibfk_1`
+    FOREIGN KEY (`applicant_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`ats_applicants` (`applicant_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_email_templates`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_email_templates` (
+  `template_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `title` VARCHAR(50) NOT NULL,
+  `subject` VARCHAR(100) NOT NULL,
+  `body` TEXT NOT NULL,
+  PRIMARY KEY (`template_id`),
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  CONSTRAINT `ats_email_templates_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`ats_notifications`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`ats_notifications` (
+  `notification_id` CHAR(36) NOT NULL,
+  `notification_type` ENUM('New Applicant', 'Blacklisted Applicant') NOT NULL,
+  `applicant_id` CHAR(36) NOT NULL,
+  `is_viewed` TINYINT(1) NULL DEFAULT '0',
+  PRIMARY KEY (`notification_id`),
+  INDEX `applicant_id` (`applicant_id` ASC) VISIBLE,
+  CONSTRAINT `ats_notifications_ibfk_1`
+    FOREIGN KEY (`applicant_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`ats_applicants` (`applicant_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`company_addresses`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`company_addresses` (
+  `company_id` CHAR(36) NOT NULL,
+  `address_type` ENUM('MAIN', 'BRANCH') NOT NULL DEFAULT 'MAIN',
+  `floor_bldg_street` VARCHAR(100) NULL DEFAULT NULL,
+  `barangay` VARCHAR(100) NOT NULL,
+  `city_municipality` VARCHAR(100) NOT NULL,
+  `postal_code` VARCHAR(4) NOT NULL,
+  `province_region` VARCHAR(100) NOT NULL,
+  `country` VARCHAR(100) NOT NULL,
+  INDEX `company_id_fk` (`company_id` ASC) VISIBLE,
+  CONSTRAINT `company_id_fk`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`company_departments`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`company_departments` (
+  `department_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `department_name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`department_id`),
+  INDEX `departments_company_id_fk` (`company_id` ASC) VISIBLE,
+  CONSTRAINT `departments_company_id_fk`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`company_divisions`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`company_divisions` (
+  `division_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `division_name` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`division_id`),
+  INDEX `divisions_company_id_fk` (`company_id` ASC) VISIBLE,
+  CONSTRAINT `divisions_company_id_fk`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`company_industries`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`company_industries` (
+  `industry_id` CHAR(36) NOT NULL,
+  `industry_type` VARCHAR(50) NOT NULL,
+  PRIMARY KEY (`industry_id`),
+  UNIQUE INDEX `UNIQUE_INDUSTRY_TYPE` USING BTREE (`industry_type`) VISIBLE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`company_info`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`company_info` (
+  `company_id` CHAR(36) NOT NULL,
+  `industry_id` CHAR(36) NULL DEFAULT NULL,
+  `company_name` VARCHAR(255) NOT NULL,
+  `company_trade_name` VARCHAR(100) NULL DEFAULT NULL,
+  `company_phone` VARCHAR(15) NOT NULL,
+  `company_brn` VARCHAR(15) NOT NULL,
+  `company_tin` VARCHAR(15) NOT NULL,
+  `employee_count` INT NOT NULL,
+  `company_logo` TEXT NULL DEFAULT NULL,
+  `date_added` TIMESTAMP NOT NULL DEFAULT now(),
+  `status` ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+  PRIMARY KEY (`company_id`),
+  UNIQUE INDEX `UNIQUE_COMPANY_EMAIL` USING BTREE (`company_id`) VISIBLE,
+  UNIQUE INDEX `UNIQUE_COMPANY_PHONE` USING BTREE (`company_phone`) VISIBLE,
+  UNIQUE INDEX `UNIQUE_COMPANY_BRN` USING BTREE (`company_brn`) VISIBLE,
+  UNIQUE INDEX `UNIQUE_COMPANY_TIN` USING BTREE (`company_tin`) VISIBLE,
+  INDEX `industry_id_fk` (`industry_id` ASC) VISIBLE,
+  CONSTRAINT `industry_id_fk`
+    FOREIGN KEY (`industry_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`company_industries` (`industry_id`)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`company_job_titles`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`company_job_titles` (
+  `job_title_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `job_title` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`job_title_id`),
+  INDEX `jobs_company_id_fk` (`company_id` ASC) VISIBLE,
+  CONSTRAINT `jobs_company_id_fk`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`company_subscriptions`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`company_subscriptions` (
+  `company_subscription_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `service_id` CHAR(36) NOT NULL,
+  INDEX `service_id` (`service_id` ASC) VISIBLE,
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  CONSTRAINT `company_subscriptions_ibfk_1`
+    FOREIGN KEY (`service_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`services` (`service_id`),
+  CONSTRAINT `company_subscriptions_ibfk_2`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_leave_policies`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_leave_policies` (
+  `leave_policy_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT NOT NULL,
+  `paid` TINYINT NULL DEFAULT NULL,
+  `assignee` ENUM('All', 'Regular', 'Probationary', 'Part-Time') NOT NULL,
+  `is_active` TINYINT NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  PRIMARY KEY (`leave_policy_id`),
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `hris_leave_policies_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `hris_leave_policies_ibfk_2`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_leave_allowance_setups`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_leave_allowance_setups` (
+  `leave_id` CHAR(36) NOT NULL,
+  `leave_filing` ENUM('Limited', 'Unlimited') NOT NULL,
+  `issuance` ENUM('Hire Date', 'Num of Months') NULL DEFAULT NULL,
+  `num_months` SMALLINT NULL DEFAULT NULL,
+  `type` ENUM('Annual', 'Monthly', 'Bi-Monthly', 'Weekly') NULL DEFAULT NULL,
+  `annual_accrual_date` DATE NULL DEFAULT NULL,
+  `period_accrual_on` ENUM('Start', 'End') NULL DEFAULT NULL,
+  `credit_earned` DOUBLE NULL DEFAULT NULL,
+  `expiration` ENUM('Annual', 'Monthly', 'Next Accrual') NULL DEFAULT NULL,
+  `annual_expiration_date` DATE NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `leave_id` (`leave_id` ASC) VISIBLE,
+  CONSTRAINT `hris_leave_allowance_setups_ibfk_1`
+    FOREIGN KEY (`leave_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_leave_policies` (`leave_policy_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_leave_permissions`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_leave_permissions` (
+  `leave_id` CHAR(36) NOT NULL,
+  `halfday` TINYINT NOT NULL DEFAULT '0',
+  `retroactive_filing` TINYINT NOT NULL,
+  `modify_pending_request` TINYINT NOT NULL,
+  `modify_processed_request` TINYINT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `leave_id` (`leave_id` ASC) VISIBLE,
+  CONSTRAINT `hris_leave_permissions_ibfk_1`
+    FOREIGN KEY (`leave_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_leave_policies` (`leave_policy_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_leave_requirements`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_leave_requirements` (
+  `leave_id` CHAR(36) NOT NULL,
+  `approval` TINYINT NOT NULL,
+  `reason` TINYINT NOT NULL,
+  `attachment` TINYINT NOT NULL,
+  `notice_period` TINYINT NOT NULL,
+  `notice_days` TINYINT NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `leave_id` (`leave_id` ASC) VISIBLE,
+  CONSTRAINT `hris_leave_requirements_ibfk_1`
+    FOREIGN KEY (`leave_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_leave_policies` (`leave_policy_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_addresses`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_addresses` (
+  `user_id` CHAR(36) NOT NULL,
+  `building_num` VARCHAR(10) NULL DEFAULT NULL,
+  `street` VARCHAR(100) NULL DEFAULT NULL,
+  `barangay` VARCHAR(100) NOT NULL,
+  `city` VARCHAR(100) NOT NULL,
+  `postal_code` VARCHAR(4) NOT NULL,
+  `province` VARCHAR(100) NOT NULL,
+  `region` VARCHAR(100) NOT NULL,
+  `country` VARCHAR(100) NOT NULL,
+  `address_type` ENUM('CURRENT', 'PERMANENT') NOT NULL,
+  INDEX `user_id_adddress_fk` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `user_id_adddress_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_attendances`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_attendances` (
+  `user_attendance_id` CHAR(36) NOT NULL,
+  `user_id` CHAR(36) NOT NULL,
+  `attendance_date` DATE NOT NULL,
+  `time_in` TIME NULL DEFAULT NULL,
+  `time_out` TIME NULL DEFAULT NULL,
+  `hours_logged` DECIMAL(10,2) NULL DEFAULT NULL,
+  `break_start` TIME NULL DEFAULT NULL,
+  `break_end` TIME NULL DEFAULT NULL,
+  `hours_rendered` DECIMAL(10,0) NULL DEFAULT NULL,
+  `undertime_tardiness_hours` DECIMAL(5,2) NULL DEFAULT NULL,
+  `night_differential_hours` DECIMAL(5,2) NULL DEFAULT NULL,
+  `absent_day` DECIMAL(5,2) NULL DEFAULT NULL,
+  `shift_type` ENUM('REGULAR', 'SLIDE', 'FLEXIBLE', 'REST DATE') NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  PRIMARY KEY (`user_attendance_id`),
+  INDEX `user_id` (`user_id` ASC) VISIBLE,
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `hris_user_attendances_ibfk_1`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `hris_user_attendances_ibfk_2`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_designations`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_designations` (
+  `user_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NULL DEFAULT NULL,
+  `job_title_id` CHAR(36) NULL DEFAULT NULL,
+  `department_id` CHAR(36) NULL DEFAULT NULL,
+  `division_id` CHAR(36) NULL DEFAULT NULL,
+  `upline_id` CHAR(36) NULL DEFAULT NULL,
+  INDEX `designations_user_id_fk` (`user_id` ASC) VISIBLE,
+  INDEX `designations_company_id_fk` (`company_id` ASC) VISIBLE,
+  INDEX `designations_job_title_id_fk` (`job_title_id` ASC) VISIBLE,
+  INDEX `designations_department_id_fk` (`department_id` ASC) VISIBLE,
+  INDEX `designations_division_id_fk` (`division_id` ASC) VISIBLE,
+  INDEX `designatation_upline_id_fk` (`upline_id` ASC) VISIBLE,
+  CONSTRAINT `designations_company_id_fk`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `designations_department_id_fk`
+    FOREIGN KEY (`department_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`company_departments` (`department_id`)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL,
+  CONSTRAINT `designations_division_id_fk`
+    FOREIGN KEY (`division_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`company_divisions` (`division_id`)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL,
+  CONSTRAINT `designations_job_title_id_fk`
+    FOREIGN KEY (`job_title_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`company_job_titles` (`job_title_id`)
+    ON DELETE SET NULL
+    ON UPDATE SET NULL,
+  CONSTRAINT `designations_user_id_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `hris_user_designations_ibfk_1`
+    FOREIGN KEY (`upline_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_emergency_contacts`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_emergency_contacts` (
+  `user_id` CHAR(36) NOT NULL,
+  `firs_name` VARCHAR(50) NOT NULL,
+  `middle_name` VARCHAR(50) NOT NULL,
+  `last_name` VARCHAR(50) NOT NULL,
+  `extension_name` VARCHAR(3) NOT NULL,
+  `contact_number` VARCHAR(15) NOT NULL,
+  INDEX `user_id_emergency_contact_fk` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `user_id_emergency_contact_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_employment_infos`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_employment_infos` (
+  `user_id` CHAR(36) NOT NULL,
+  `date_hired` DATE NOT NULL,
+  `date_regularization` DATE NULL DEFAULT NULL,
+  `date_offboarding` DATE NULL DEFAULT NULL,
+  `date_separated` DATE NULL DEFAULT NULL,
+  `employment_status` ENUM('PROBATIONARY', 'REGULAR', 'PART-TIME') NOT NULL,
+  `upline` CHAR(36) NULL DEFAULT NULL,
+  INDEX `user_id_emp_info_fk` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `user_id_emp_info_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_infos`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_infos` (
+  `user_id` CHAR(36) NOT NULL,
+  `first_name` VARCHAR(50) NOT NULL,
+  `middle_name` VARCHAR(50) NULL DEFAULT NULL,
+  `last_name` VARCHAR(50) NOT NULL,
+  `extension_name` VARCHAR(3) NULL DEFAULT NULL,
+  `sex` VARCHAR(6) NOT NULL,
+  `user_pic` TEXT NULL DEFAULT NULL,
+  `personal_email` VARCHAR(100) NOT NULL,
+  `contact_number` VARCHAR(15) NOT NULL,
+  `birthdate` DATE NOT NULL,
+  UNIQUE INDEX `UNIQUE_PERSONAL_EMAIL` (`personal_email` ASC) VISIBLE,
+  UNIQUE INDEX `UNIQUE_CONTACT_NUMBER` (`contact_number` ASC) VISIBLE,
+  INDEX `user_id_info_fk` USING BTREE (`user_id`) VISIBLE,
+  CONSTRAINT `user_id_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_leave_credits`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_leave_credits` (
+  `company_id` CHAR(36) NOT NULL,
+  `user_id` CHAR(36) NOT NULL,
+  `leave_policy_id` CHAR(36) NOT NULL DEFAULT '0',
+  `amount` DOUBLE(5,2) NOT NULL DEFAULT '0.00',
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `user_id` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `hris_user_leave_credits_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `hris_user_leave_credits_ibfk_2`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_leaves`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_leaves` (
+  `user_leave_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `requester_id` CHAR(36) NOT NULL,
+  `approver_id` CHAR(36) NOT NULL,
+  `leave_policy` VARCHAR(255) NOT NULL,
+  `filed_date` DATE NOT NULL,
+  `description` TEXT NOT NULL,
+  `pto_used` DECIMAL(10,2) NOT NULL,
+  `half_day` TINYINT NOT NULL,
+  `leave_status` ENUM('PENDING', 'CANCELLED', 'DECLINED', 'APPROVED') NOT NULL DEFAULT 'PENDING',
+  `date_filed` DATE NOT NULL,
+  `reason_declined` TEXT NULL DEFAULT NULL,
+  `date_responded` TIMESTAMP NOT NULL,
+  PRIMARY KEY (`user_leave_id`),
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `requester_id` (`requester_id` ASC) VISIBLE,
+  INDEX `approver_id` (`approver_id` ASC) VISIBLE,
+  INDEX `leave_policy` (`leave_policy` ASC) VISIBLE,
+  CONSTRAINT `hris_user_leaves_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `hris_user_leaves_ibfk_2`
+    FOREIGN KEY (`requester_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `hris_user_leaves_ibfk_3`
+    FOREIGN KEY (`approver_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `hris_user_leaves_ibfk_4`
+    FOREIGN KEY (`leave_policy`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_leave_policies` (`leave_policy_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_leaves_cancellations`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_leaves_cancellations` (
+  `user_leave_id` CHAR(36) NOT NULL,
+  `approver_id` CHAR(36) NOT NULL,
+  `reason_cancelled` TEXT NULL DEFAULT NULL,
+  `cancellation_status` ENUM('PENDING', 'CANCELLED', 'DECLINED', 'APPROVED') NOT NULL DEFAULT 'PENDING',
+  `date_filed` DATE NOT NULL,
+  `date_responded` DATETIME NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `user_leave_id` (`user_leave_id` ASC) VISIBLE,
+  INDEX `approver_id` (`approver_id` ASC) VISIBLE,
+  CONSTRAINT `hris_user_leaves_cancellations_ibfk_1`
+    FOREIGN KEY (`user_leave_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_leaves` (`user_leave_id`),
+  CONSTRAINT `hris_user_leaves_cancellations_ibfk_2`
+    FOREIGN KEY (`approver_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_overtimes`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_overtimes` (
+  `hris_user_overtimes_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `requester_id` CHAR(36) NOT NULL,
+  `approver_id` CHAR(36) NOT NULL,
+  `overtime_type` ENUM('REGULAR DAY', 'REST DAY', 'SPECIAL HOLIDAY', 'REGULAR HOLIDAY') NOT NULL,
+  `filed_date` DATE NOT NULL,
+  `description` TEXT NOT NULL,
+  `start_time` TIME NOT NULL,
+  `end_time` TIME NOT NULL,
+  `hours_requested` TINYINT NOT NULL,
+  `overtime_status` ENUM('PENDING', 'CANCELLED', 'DECLINED', 'APPROVED') NOT NULL,
+  `date_filed` TIMESTAMP NOT NULL,
+  `reason_declined` TEXT NULL DEFAULT NULL,
+  `date_responded` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`hris_user_overtimes_id`),
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `requester_id` (`requester_id` ASC) VISIBLE,
+  INDEX `approver_id` (`approver_id` ASC) VISIBLE,
+  CONSTRAINT `hris_user_overtimes_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `hris_user_overtimes_ibfk_2`
+    FOREIGN KEY (`requester_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `hris_user_overtimes_ibfk_3`
+    FOREIGN KEY (`approver_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_overtimes_cancellations`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_overtimes_cancellations` (
+  `hris_user_overtimes_id` CHAR(36) NOT NULL,
+  `approver_id` CHAR(36) NOT NULL,
+  `reason_cancelled` TEXT NULL DEFAULT NULL,
+  `cancellation_status` ENUM('PENDING', 'CANCELLED', 'DECLINED', 'APPROVED') NOT NULL DEFAULT 'PENDING',
+  `date_filed` DATE NOT NULL,
+  `date_responded` DATETIME NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `hris_user_overtimes_id` (`hris_user_overtimes_id` ASC) VISIBLE,
+  INDEX `approver_id` (`approver_id` ASC) VISIBLE,
+  CONSTRAINT `hris_user_overtimes_cancellations_ibfk_1`
+    FOREIGN KEY (`hris_user_overtimes_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_overtimes` (`hris_user_overtimes_id`),
+  CONSTRAINT `hris_user_overtimes_cancellations_ibfk_2`
+    FOREIGN KEY (`approver_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_salaries`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_salaries` (
+  `user_id` CHAR(36) NOT NULL,
+  `base_pay` DECIMAL(10,2) NOT NULL,
+  `type` ENUM('STARTING', 'INCREASE', 'CORRECTION') NOT NULL,
+  `date` DATE NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  INDEX `user_id_salary_fk` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `user_id_salary_fk`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`hris_user_shifts`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`hris_user_shifts` (
+  `user_shift_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `user_id` CHAR(36) NOT NULL,
+  `day_of_week` TINYINT NULL DEFAULT NULL,
+  `start_time` TIME NULL DEFAULT NULL,
+  `end_time` TIME NULL DEFAULT NULL,
+  `break_start_time` TIME NULL DEFAULT NULL,
+  `break_end_time` TIME NULL DEFAULT NULL,
+  `flexible` TINYINT NULL DEFAULT NULL,
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `user_id` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `hris_user_shifts_ibfk_1`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `hris_user_shifts_ibfk_2`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`logs_activities`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`logs_activities` (
+  `service_id` CHAR(36) NOT NULL,
+  `company_id` CHAR(36) NOT NULL,
+  `user_id` CHAR(36) NOT NULL,
+  `action` ENUM('Create', 'Update', 'Delete') NOT NULL,
+  `table_name` VARCHAR(255) NOT NULL,
+  `record_id` CHAR(36) NOT NULL,
+  `description` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  INDEX `service_id` (`service_id` ASC) VISIBLE,
+  INDEX `company_id` (`company_id` ASC) VISIBLE,
+  INDEX `user_id` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `logs_activities_ibfk_1`
+    FOREIGN KEY (`service_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`services` (`service_id`),
+  CONSTRAINT `logs_activities_ibfk_2`
+    FOREIGN KEY (`company_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`companies` (`company_id`),
+  CONSTRAINT `logs_activities_ibfk_3`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`logs_user_auth`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`logs_user_auth` (
+  `user_id` CHAR(36) NOT NULL,
+  `login_timestamp` TIMESTAMP NOT NULL,
+  `logout_timestamp` TIMESTAMP NULL DEFAULT NULL,
+  `device_used` ENUM('Desktop', 'Tablet', 'Mobile') NULL DEFAULT NULL,
+  `ip_address` CHAR(50) NULL DEFAULT NULL,
+  `city` VARCHAR(255) NULL DEFAULT NULL,
+  `region` VARCHAR(255) NULL DEFAULT NULL,
+  `country` VARCHAR(255) NULL DEFAULT NULL,
+  INDEX `user_id` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `logs_user_auth_ibfk_1`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`service_features`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`service_features` (
+  `service_feature_id` CHAR(36) NOT NULL,
+  `service_id` CHAR(36) NOT NULL,
+  `feature_name` VARCHAR(50) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  PRIMARY KEY (`service_feature_id`),
+  INDEX `service_id` (`service_id` ASC) VISIBLE,
+  CONSTRAINT `service_features_ibfk_1`
+    FOREIGN KEY (`service_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`services` (`service_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`service_access_permission`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`service_access_permission` (
+  `access_per_id` CHAR(36) NOT NULL,
+  `user_id` CHAR(36) NOT NULL,
+  `service_feature_id` CHAR(36) NOT NULL,
+  UNIQUE INDEX `UNIQUE_USER_ID` (`user_id` ASC) VISIBLE,
+  UNIQUE INDEX `UNIQUE_SERVICE_FEATURE_ID` (`service_feature_id` ASC) VISIBLE,
+  CONSTRAINT `service_access_permission_ibfk_1`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `service_access_permission_ibfk_2`
+    FOREIGN KEY (`service_feature_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`service_features` (`service_feature_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_company_blogs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_company_blogs` (
+  `cblog_id` CHAR(36) NOT NULL,
+  `title` VARCHAR(70) NOT NULL,
+  `description` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NOT NULL,
+  PRIMARY KEY (`cblog_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  INDEX `updated_by` (`updated_by` ASC) VISIBLE,
+  CONSTRAINT `sl_company_blogs_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `sl_company_blogs_ibfk_2`
+    FOREIGN KEY (`updated_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_tags`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_tags` (
+  `tag_id` CHAR(36) NOT NULL,
+  `tag_name` VARCHAR(20) NULL DEFAULT NULL,
+  PRIMARY KEY (`tag_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_cblog_tags`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_cblog_tags` (
+  `cblog_tag_id` CHAR(36) NOT NULL,
+  `cblog_id` CHAR(36) NOT NULL,
+  `tag_id` CHAR(36) NOT NULL,
+  PRIMARY KEY (`cblog_tag_id`),
+  INDEX `cblog_id` (`cblog_id` ASC) VISIBLE,
+  INDEX `tag_id` (`tag_id` ASC) VISIBLE,
+  CONSTRAINT `sl_cblog_tags_ibfk_1`
+    FOREIGN KEY (`cblog_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_company_blogs` (`cblog_id`),
+  CONSTRAINT `sl_cblog_tags_ibfk_2`
+    FOREIGN KEY (`tag_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_tags` (`tag_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_certifications`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_certifications` (
+  `cert_id` CHAR(36) NOT NULL,
+  `cert_img_url` TEXT NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`cert_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  INDEX `updated_by` (`updated_by` ASC) VISIBLE,
+  CONSTRAINT `sl_certifications_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `sl_certifications_ibfk_2`
+    FOREIGN KEY (`updated_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_courses`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_courses` (
+  `course_id` CHAR(36) NOT NULL,
+  `title` VARCHAR(50) NOT NULL,
+  `description` TEXT NOT NULL,
+  `url` TEXT NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  PRIMARY KEY (`course_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `sl_courses_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_company_job_courses`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_company_job_courses` (
+  `job_course_id` CHAR(36) NOT NULL,
+  `course_id` CHAR(36) NOT NULL,
+  `job_id` CHAR(36) NOT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`job_course_id`),
+  INDEX `course_id` (`course_id` ASC) VISIBLE,
+  INDEX `job_id` (`job_id` ASC) VISIBLE,
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  INDEX `updated_by` (`updated_by` ASC) VISIBLE,
+  CONSTRAINT `sl_company_job_courses_ibfk_1`
+    FOREIGN KEY (`course_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_courses` (`course_id`),
+  CONSTRAINT `sl_company_job_courses_ibfk_2`
+    FOREIGN KEY (`job_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_company_jobs` (`job_id`),
+  CONSTRAINT `sl_company_job_courses_ibfk_3`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `sl_company_job_courses_ibfk_4`
+    FOREIGN KEY (`updated_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_content`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_content` (
+  `content_id` CHAR(36) NOT NULL,
+  `hero_video` TEXT NOT NULL,
+  `text_banner` TEXT NOT NULL,
+  `hero_image` TEXT NOT NULL,
+  `story_img` TEXT NOT NULL,
+  `mission` VARCHAR(255) NOT NULL,
+  `vision` VARCHAR(255) NOT NULL,
+  `day_in_pod_url` TEXT NOT NULL,
+  PRIMARY KEY (`content_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_employee_blogs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_employee_blogs` (
+  `eblog_id` CHAR(36) NOT NULL,
+  `title` VARCHAR(70) NOT NULL,
+  `description` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`eblog_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  INDEX `updated_by` (`updated_by` ASC) VISIBLE,
+  CONSTRAINT `sl_employee_blogs_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `sl_employee_blogs_ibfk_2`
+    FOREIGN KEY (`updated_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_eblog_comments`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_eblog_comments` (
+  `comment_id` CHAR(36) NOT NULL,
+  `comment` VARCHAR(100) NOT NULL,
+  `content_id` CHAR(36) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  PRIMARY KEY (`comment_id`),
+  INDEX `content_id` (`content_id` ASC) VISIBLE,
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `sl_eblog_comments_ibfk_1`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_employee_blogs` (`eblog_id`),
+  CONSTRAINT `sl_eblog_comments_ibfk_2`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_eblog_likes`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_eblog_likes` (
+  `like_id` CHAR(36) NOT NULL,
+  `eblog_id` CHAR(36) NOT NULL,
+  `user_id` CHAR(36) NOT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`like_id`),
+  INDEX `eblog_id` (`eblog_id` ASC) VISIBLE,
+  INDEX `user_id` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `sl_eblog_likes_ibfk_1`
+    FOREIGN KEY (`eblog_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_employee_blogs` (`eblog_id`),
+  CONSTRAINT `sl_eblog_likes_ibfk_2`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_events`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_events` (
+  `event_id` CHAR(36) NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT NOT NULL,
+  `date_time` DATETIME NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  PRIMARY KEY (`event_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `sl_events_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_news`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_news` (
+  `news_id` CHAR(36) NOT NULL,
+  `title` VARCHAR(50) NOT NULL,
+  `article` TEXT NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`news_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `sl_news_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_images`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_images` (
+  `image_id` CHAR(36) NOT NULL,
+  `content_id` CHAR(36) NOT NULL,
+  `image_url` TEXT NOT NULL,
+  `caption` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`image_id`),
+  INDEX `content_id` (`content_id` ASC) VISIBLE,
+  CONSTRAINT `sl_images_ibfk_1`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_company_blogs` (`cblog_id`),
+  CONSTRAINT `sl_images_ibfk_2`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_employee_blogs` (`eblog_id`),
+  CONSTRAINT `sl_images_ibfk_3`
+    FOREIGN KEY (`content_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_news` (`news_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_salary_ranges`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_salary_ranges` (
+  `salary_range_id` CHAR(36) NOT NULL,
+  `min_value` INT NULL DEFAULT NULL,
+  `max_value` INT NULL DEFAULT NULL,
+  PRIMARY KEY (`salary_range_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_job_details`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_job_details` (
+  `job_det_id` CHAR(36) NOT NULL,
+  `job_id` CHAR(37) NOT NULL,
+  `salary_range_id` CHAR(36) NULL DEFAULT NULL,
+  `responsibility` TEXT NULL DEFAULT NULL,
+  `preferred_qualification` TEXT NULL DEFAULT NULL,
+  `requirement` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`job_det_id`),
+  INDEX `job_id` (`job_id` ASC) VISIBLE,
+  INDEX `salary_range_id` (`salary_range_id` ASC) VISIBLE,
+  CONSTRAINT `sl_job_details_ibfk_1`
+    FOREIGN KEY (`job_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_company_jobs` (`job_id`),
+  CONSTRAINT `sl_job_details_ibfk_2`
+    FOREIGN KEY (`salary_range_id`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`sl_salary_ranges` (`salary_range_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_personality_tests`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_personality_tests` (
+  `test_id` CHAR(36) NOT NULL,
+  `test_title` VARCHAR(50) NULL DEFAULT NULL,
+  `url` TEXT NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`test_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  INDEX `updated_by` (`updated_by` ASC) VISIBLE,
+  CONSTRAINT `sl_personality_tests_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`),
+  CONSTRAINT `sl_personality_tests_ibfk_2`
+    FOREIGN KEY (`updated_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_spotify_episodes`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_spotify_episodes` (
+  `episode_id` CHAR(36) NOT NULL,
+  `id` CHAR(22) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  PRIMARY KEY (`episode_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `sl_spotify_episodes_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+-- -----------------------------------------------------
+-- Table `dyd5mmbwqh2jzcaq`.`sl_testimonials`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dyd5mmbwqh2jzcaq`.`sl_testimonials` (
+  `testimonial_id` CHAR(36) NOT NULL,
+  `employee_image_url` TEXT NOT NULL,
+  `employee_name` TEXT NOT NULL,
+  `position` TEXT NOT NULL,
+  `testimony` TEXT NOT NULL,
+  `is_shown` TINYINT NOT NULL DEFAULT '1',
+  `created_at` TIMESTAMP NOT NULL,
+  `created_by` CHAR(36) NOT NULL,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL,
+  `updated_by` CHAR(36) NULL DEFAULT NULL,
+  PRIMARY KEY (`testimonial_id`),
+  INDEX `created_by` (`created_by` ASC) VISIBLE,
+  CONSTRAINT `sl_testimonials_ibfk_1`
+    FOREIGN KEY (`created_by`)
+    REFERENCES `dyd5mmbwqh2jzcaq`.`hris_user_accounts` (`user_id`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
