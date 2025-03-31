@@ -2,29 +2,29 @@ const pool = require("../../config/db");
 
 // /applicants/search?query?
 exports.searchApplicant = async (req, res) => {
-    try {
-        const filters = req.query;
-        console.log(filters);
-        
-        const conditions = [];
-        const values = [];
+  try {
+    const filters = req.query;
+    console.log(filters);
 
-        console.log(filters);
+    const conditions = [];
+    const values = [];
 
-        if (filters.month) {
-            conditions.push("MONTHNAME(a.date_created) = ?");
-            values.push(filters.month);
-        }
-        if (filters.year) {
-            conditions.push("YEAR(a.date_created) = ?");
-            values.push(filters.year);
-        }
-        if (filters.position) {
-            conditions.push("j.title LIKE ?");
-            values.push(`%${filters.position}%`);
-        }
-        if (filters.searchQuery) {
-            conditions.push(`(
+    console.log(filters);
+
+    if (filters.month) {
+      conditions.push("MONTHNAME(a.date_created) = ?");
+      values.push(filters.month);
+    }
+    if (filters.year) {
+      conditions.push("YEAR(a.date_created) = ?");
+      values.push(filters.year);
+    }
+    if (filters.position) {
+      conditions.push("j.title LIKE ?");
+      values.push(`%${filters.position}%`);
+    }
+    if (filters.searchQuery) {
+      conditions.push(`(
                 a.first_name LIKE ?
                  OR a.middle_name LIKE ? 
                  OR a.last_name LIKE ?
@@ -34,19 +34,31 @@ exports.searchApplicant = async (req, res) => {
                  OR c.mobile_number_1 LIKE ?
                  OR c.mobile_number_2 LIKE ? 
                  )`);
-            values.push(`%${filters.searchQuery}%`, `%${filters.searchQuery}%`, `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`,  `%${filters.searchQuery}%`);
-        }
-        if (filters.status) {
-            const statusArray = Array.isArray(filters.status) ? filters.status : [filters.status];
-            const placeholders = statusArray.map(() => "?").join(", ");
-            conditions.push(`p.status IN (${placeholders})`);
-            values.push(...statusArray);
-        }
+      values.push(
+        `%${filters.searchQuery}%`,
+        `%${filters.searchQuery}%`,
+        `%${filters.searchQuery}%`,
+        `%${filters.searchQuery}%`,
+        `%${filters.searchQuery}%`,
+        `%${filters.searchQuery}%`,
+        `%${filters.searchQuery}%`,
+        `%${filters.searchQuery}%`
+      );
+    }
+    if (filters.status) {
+      const statusArray = Array.isArray(filters.status)
+        ? filters.status
+        : [filters.status];
+      const placeholders = statusArray.map(() => "?").join(", ");
+      conditions.push(`p.status IN (${placeholders})`);
+      values.push(...statusArray);
+    }
 
-        // Ensure at least one condition to avoid syntax error in SQL
-        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    // Ensure at least one condition to avoid syntax error in SQL
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-        const sql = `
+    const sql = `
             SELECT
                 a.applicant_id, 
                 a.first_name, 
@@ -68,26 +80,26 @@ exports.searchApplicant = async (req, res) => {
             ${whereClause}
         `;
 
-        const [results] = await pool.execute(sql, values);
+    const [results] = await pool.execute(sql, values);
 
-        return res.json(results);
-    } catch (error) {
-        console.error("Error fetching applicants:", error);
-        return res.status(500).json({ error: "Internal Server Error" });
-    }
+    return res.json(results);
+  } catch (error) {
+    console.error("Error fetching applicants:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
 //applicants/
 exports.getAllApplicants = async (req, res) => {
-    try {
-        const sql = `
+  try {
+    const sql = `
             SELECT 
                 a.applicant_id, 
                 a.first_name, 
                 a.middle_name, 
                 a.last_name, 
-                a.date_created, 
                 t.tracking_id, 
+                t.created_at,
                 p.status, 
                 p.progress_id,
                 j.title
@@ -97,38 +109,36 @@ exports.getAllApplicants = async (req, res) => {
             LEFT JOIN sl_company_jobs j ON t.position_id = j.job_id;
         `;
 
-        const [results] = await pool.execute(sql);
+    const [results] = await pool.execute(sql);
 
-        if (results) {
-            return res.status(201).json(results)
-        }
-    } catch (error) {
-        return res.status(500).json({ error: error });
+    if (results) {
+      return res.status(201).json(results);
     }
-}
+  } catch (error) {
+    return res.status(500).json({ error: error });
+  }
+};
 
 //applicants/
 exports.getAllApplicantsPagination = async (req, res) => {
-    try {
-        console.log("running...");
-        
-        // Extract pagination parameters from the request query
-        let { page, limit } = req.query;
-        page = parseInt(page) || 1; // Default page = 1
-        limit = parseInt(limit) || 10; // Default limit = 10
+  try {
+    console.log("running...");
 
-        const offset = (page - 1) * limit;
-        
-        
+    // Extract pagination parameters from the request query
+    let { page, limit } = req.query;
+    page = parseInt(page) || 1; // Default page = 1
+    limit = parseInt(limit) || 10; // Default limit = 10
 
-        // SQL query with LIMIT and OFFSET for pagination
-        const sql = `
+    const offset = (page - 1) * limit;
+
+    // SQL query with LIMIT and OFFSET for pagination
+    const sql = `
             SELECT 
                 a.applicant_id, 
                 a.first_name, 
                 a.middle_name, 
                 a.last_name, 
-                a.date_created, 
+                t.applicant_created_at, 
                 p.status, 
                 p.progress_id,
                 j.title
@@ -139,58 +149,56 @@ exports.getAllApplicantsPagination = async (req, res) => {
             LIMIT ? OFFSET ?;
         `;
 
+    // Query to count total number of applicants
+    const countSql = `SELECT COUNT(*) AS total FROM ats_applicants`;
 
+    // Execute queries
+    const [results] = await pool.query(sql, [limit, offset]);
+    //const [results] = await pool.execute(sql);
+    const [[{ total }]] = await pool.execute(countSql);
 
-        // Query to count total number of applicants
-        const countSql = `SELECT COUNT(*) AS total FROM ats_applicants`;
-
-        // Execute queries
-        const [results] = await pool.query(sql, [limit, offset]);
-        //const [results] = await pool.execute(sql);
-        const [[{ total }]] = await pool.execute(countSql);
-
-        // Return paginated results with metadata
-        return res.status(200).json({
-            applicants: results,
-            totalApplicants: total,
-            totalPages: Math.ceil(total / limit),
-            currentPage: page
-        });
-
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
+    // Return paginated results with metadata
+    return res.status(200).json({
+      applicants: results,
+      totalApplicants: total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };
 
-
 exports.getApplicantsFilter = async (req, res) => {
-    const filters = req.query;
-    const conditions = [];
-    const values = [];
-  
-    console.log(filters);
-  
-    if (filters.month) {
-      conditions.push("MONTHNAME(a.date_created)= ?");
-      values.push(filters.month);
-    }
-    if (filters.year) {
-      conditions.push("YEAR(a.date_created) = ?");
-      values.push(filters.year);
-    }
-    if (filters.position) {
-      conditions.push("j.title LIKE ?");
-      values.push(`%${filters.position}%`);
-    }
-    if (filters.status) {
-      const statusArray = Array.isArray(filters.status) ? filters.status : [filters.status];
-      const placeholders = statusArray.map(() => "?").join(", ");
-      conditions.push(`p.status IN (${placeholders})`);
-      values.push(...statusArray);
-    }
-  
-    // Construct SQL query
-    const baseSql = `
+  const filters = req.query;
+  const conditions = [];
+  const values = [];
+
+  console.log(filters);
+
+  if (filters.month) {
+    conditions.push("MONTHNAME(a.date_created)= ?");
+    values.push(filters.month);
+  }
+  if (filters.year) {
+    conditions.push("YEAR(a.date_created) = ?");
+    values.push(filters.year);
+  }
+  if (filters.position) {
+    conditions.push("j.title LIKE ?");
+    values.push(`%${filters.position}%`);
+  }
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : [filters.status];
+    const placeholders = statusArray.map(() => "?").join(", ");
+    conditions.push(`p.status IN (${placeholders})`);
+    values.push(...statusArray);
+  }
+
+  // Construct SQL query
+  const baseSql = `
       SELECT
         a.*,
         c.*, 
@@ -208,27 +216,27 @@ exports.getApplicantsFilter = async (req, res) => {
       LEFT JOIN sl_company_jobs j
         ON t.position_id = j.job_id
     `;
-  
-    // Add WHERE clause if filters exist
-    const sql = conditions.length > 0 
-      ? `${baseSql} WHERE ${conditions.join(" AND ")}` 
+
+  // Add WHERE clause if filters exist
+  const sql =
+    conditions.length > 0
+      ? `${baseSql} WHERE ${conditions.join(" AND ")}`
       : baseSql;
-  
-    try {
-      const [results] = await pool.execute(sql, values);
-      return res.json(results);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Internal Server Error' });
-    }
-  };
-  
+
+  try {
+    const [results] = await pool.execute(sql, values);
+    return res.json(results);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 exports.getApplicant = async (req, res) => {
-    try {
-        const applicant_id = req.params.applicant_id;
+  try {
+    const applicant_id = req.params.applicant_id;
 
-        const sql = `
+    const sql = `
             SELECT 
                 a.applicant_id,
                 a.first_name,
@@ -286,20 +294,17 @@ exports.getApplicant = async (req, res) => {
             WHERE a.applicant_id = ?;
         `;
 
-        const values = [applicant_id];
+    const values = [applicant_id];
 
-        const [results] = await pool.execute(sql, values);
+    const [results] = await pool.execute(sql, values);
 
-        if (results.length > 0) {
-            return res.status(200).json(results);
-        }
-
-        res.status(404).json({ message: "Applicant not found" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error", error });
+    if (results.length > 0) {
+      return res.status(200).json(results);
     }
+
+    res.status(404).json({ message: "Applicant not found" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
 };
-
-
-
