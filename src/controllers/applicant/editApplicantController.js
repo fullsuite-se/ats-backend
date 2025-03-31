@@ -1,6 +1,7 @@
 const pool = require("../../config/db");
 
 const editApplicant = async (applicant) => {
+console.log("applicant" + JSON.stringify(applicant));
   try {
     let sql = `
       UPDATE ats_applicants 
@@ -46,7 +47,7 @@ const editApplicant = async (applicant) => {
     ];
     await pool.execute(sql, values);
 
-    if (applicant.created_at) {
+    if (applicant.date_applied) {
       sql = `
         UPDATE ats_applicant_trackings 
         SET 
@@ -57,7 +58,7 @@ const editApplicant = async (applicant) => {
       `;
       values = [ 
         applicant.position_id,
-        applicant.created_at,
+        applicant.date_applied,
         applicant.test_result || null,
         applicant.applicant_id
       ];
