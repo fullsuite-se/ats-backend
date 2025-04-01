@@ -107,7 +107,7 @@ exports.getAllApplicants = async (req, res) => {
             FROM ats_applicants a
             LEFT JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
             LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-            LEFT JOIN sl_company_jobs j ON t.position_id = j.job_id;
+            LEFT JOIN sl_company_jobs j ON t.position_id = j.job_id ORDER BY t.created_at DESC;
         `;
 
     const [results] = await pool.execute(sql);
@@ -178,11 +178,11 @@ exports.getApplicantsFilter = async (req, res) => {
   console.log(filters);
 
   if (filters.month) {
-    conditions.push("MONTHNAME(a.date_created)= ?");
+    conditions.push("MONTHNAME(t.created_at)= ?");
     values.push(filters.month);
   }
   if (filters.year) {
-    conditions.push("YEAR(a.date_created) = ?");
+    conditions.push("YEAR(t.created_at) = ?");
     values.push(filters.year);
   }
   if (filters.position) {
@@ -222,7 +222,7 @@ exports.getApplicantsFilter = async (req, res) => {
   // Add WHERE clause if filters exist
   const sql =
     conditions.length > 0
-      ? `${baseSql} WHERE ${conditions.join(" AND ")}`
+      ? `${baseSql} WHERE ${conditions.join(" AND ")} ORDER BY t.created_at DESC`
       : baseSql;
 
   try {
