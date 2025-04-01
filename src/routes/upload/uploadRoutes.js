@@ -10,4 +10,7 @@ const upload = multer({storage});
 // /upload/cv
 router.post('/cv', upload.single('file') ,uploadController.uploadCV);
 
+// /upload/gdrive/cv
+router.post('/gdrive/cv', upload.single("file"), uploadController.uploadCVGdrive)
+
 module.exports = router;
