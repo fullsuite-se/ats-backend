@@ -178,11 +178,11 @@ exports.getApplicantsFilter = async (req, res) => {
   console.log(filters);
 
   if (filters.month) {
-    conditions.push("MONTHNAME(a.date_created)= ?");
+    conditions.push("MONTHNAME(t.created_at)= ?");
     values.push(filters.month);
   }
   if (filters.year) {
-    conditions.push("YEAR(a.date_created) = ?");
+    conditions.push("YEAR(t.created_at) = ?");
     values.push(filters.year);
   }
   if (filters.position) {
