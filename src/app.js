@@ -63,10 +63,15 @@ const statusRoutes = require("./routes/status/statusRoutes");
 // upload
 const uploadRoutes = require("./routes/upload/uploadRoutes");
 
+// industries
+const industryRoutes = require("./routes/jobs/industryRoutes");
+
 // configuration
 const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
 
+//status Hoistory
 const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
+
 
 
 // Routes
@@ -87,7 +92,9 @@ app.use("/company", positionRoutes);
 app.use("/user", userRoutes);
 app.use("/status", statusRoutes);
 app.use("/upload", uploadRoutes);
+app.use("/industries", industryRoutes);
 app.use('/user-configuration', userConfigurationRoutes); 
+
 
 const verifyToken = require("./middlewares/verifyToken");
 
