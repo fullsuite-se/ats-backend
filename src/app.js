@@ -66,8 +66,11 @@ const uploadRoutes = require("./routes/upload/uploadRoutes");
 // configuration
 const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
 
+const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
+
 
 // Routes
+app.use("/applicant/status-history", statusHistoryRoutes);
 app.use("/applicants", applicantRoutes);
 app.use("/applicants/add", addApplicantRoutes);
 app.use("/applicant/edit", editApplicantRoutes);
