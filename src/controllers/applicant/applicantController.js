@@ -65,6 +65,7 @@ exports.searchApplicant = async (req, res) => {
                 a.middle_name, 
                 a.last_name,
                 a.date_created, 
+                t.created_at,
                 p.status, 
                 j.title, 
                 p.progress_id
@@ -205,7 +206,8 @@ exports.getApplicantsFilter = async (req, res) => {
         p.stage, 
         p.status, 
         j.title, 
-        p.progress_id
+        p.progress_id,
+        t.created_at
       FROM ats_applicants a
       LEFT JOIN ats_contact_infos c
         ON a.applicant_id = c.applicant_id
