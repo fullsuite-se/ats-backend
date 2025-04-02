@@ -81,7 +81,11 @@ const userConfigurationRoutes = require("./routes/userConfiguration/userConfigur
 // status history
 const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
 
+//dashboard
+const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
+
 // Routes
+app.use('/analytics/dashboard', dashboardRoutes);
 app.use("/applicant/status-history", statusHistoryRoutes);
 app.use("/applicants", applicantRoutes);
 app.use("/applicants/add", addApplicantRoutes);
