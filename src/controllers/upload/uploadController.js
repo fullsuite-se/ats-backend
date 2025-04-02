@@ -2,8 +2,9 @@ const pool = require('../../config/db');
 const cloudinary = require('cloudinary').v2;
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
 const gdrive = require("../../config/gdrive"); 
+require("dotenv").config();
+
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -33,7 +34,6 @@ exports.uploadCV = async (req, res) => {
         res.status(500).json({ error: 'Upload failed', details: error.message });
     }
 }
-
 
 exports.uploadCVGdrive = async (req, res) => {
     try {
