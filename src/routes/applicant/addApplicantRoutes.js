@@ -13,8 +13,4 @@ router.post("/upload", addApplicantController.uploadApplicants);
 //applicants/add/check-duplicates
 router.post("/check-duplicates", addApplicantController.checkDuplicates);
 
-//applicants/check-if-blacklisted
-router.post("/check-if-blacklisted", addApplicantController.checkIfBlacklisted); 
-
-
 module.exports = router;
