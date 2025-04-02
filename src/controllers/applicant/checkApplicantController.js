@@ -79,7 +79,11 @@ exports.checkExistingApplication = async (req, res) => {
         const applicant = JSON.parse(req.body.applicant);
 
         const sql = `
-                SELECT * 
+                SELECT 
+                    a.*, 
+                    c.*, 
+                    p.*, 
+                    j.*
                 FROM ats_applicants a
                 LEFT JOIN ats_contact_infos c
                     ON a.applicant_id = c.applicant_id
@@ -89,9 +93,9 @@ exports.checkExistingApplication = async (req, res) => {
                     ON t.progress_id = p.progress_id
                 LEFT JOIN sl_company_jobs j
                     ON t.position_id = j.job_id
-                WHERE first_name = ? AND last_name = ? AND email_1 = ?
+                WHERE a.first_name = ? AND a.last_name = ? AND c.email_1 = ? AND c.mobile_number_1 = ?
         `; 
-        const values = [applicant.first_name, applicant.last_name, applicant.email_1]; 
+        const values = [applicant.first_name, applicant.last_name, applicant.email_1, applicant.mobile_number_1]; 
         const [result] = await pool.execute(sql, values); 
 
         if (result.length > 0) {
@@ -101,6 +105,8 @@ exports.checkExistingApplication = async (req, res) => {
         }
         return res.status(200).json({message: "no duplicates detected", isExisting: false})
     } catch (error) {
+        console.log(error.message);
+        
         res.status(500).json({ message: error.message })
     } 
 }
