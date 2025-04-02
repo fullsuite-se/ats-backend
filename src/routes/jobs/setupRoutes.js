@@ -12,8 +12,8 @@ router.get("/", getAllSetups);
 
 router.post("/", insertSetup);
 
-router.post("/:setupId", updateSetup);
+router.put("/:setupId", updateSetup);
 
-router.post("/:setupId", deleteSetup);
+router.delete("/:setupId", deleteSetup);
 
 module.exports = router;
