@@ -72,6 +72,9 @@ const industryRoutes = require("./routes/jobs/industryRoutes");
 // jobs
 const jobRoutes = require("./routes/jobs/jobRoutes");
 
+// setups
+const setupRoutes = require("./routes/jobs/setupRoutes");
+
 // configuration
 const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
 
@@ -98,6 +101,7 @@ app.use("/status", statusRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/industries", industryRoutes);
 app.use("/jobs", jobRoutes);
+app.use("/setups", setupRoutes);
 app.use("/user-configuration", userConfigurationRoutes);
 
 const verifyToken = require("./middlewares/verifyToken");
