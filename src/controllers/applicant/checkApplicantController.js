@@ -52,7 +52,7 @@ exports.checkIfBlacklisted = async (req, res) => {
 
         const isBlacklisted = checkInBlacklisted(applicant, blackListedApplicants);
 
-        
+
         if (isBlacklisted) {
             //email the applicant
             const email_body = `
@@ -70,6 +70,37 @@ exports.checkIfBlacklisted = async (req, res) => {
         return res.status(200).json({ isBlacklisted: isBlacklisted, message: "ok" });
     } catch (error) {
         res.status(500).json({ message: error.message })
-
     }
+}
+
+// TODO check duplicates or existing application (application)
+exports.checkExistingApplication = async (req, res) => {
+    try {
+        const applicant = JSON.parse(req.body.applicant);
+
+        const sql = `
+                SELECT * 
+                FROM ats_applicants a
+                LEFT JOIN ats_contact_infos c
+                    ON a.applicant_id = c.applicant_id
+                LEFT JOIN ats_applicant_trackings t
+                    ON a.applicant_id = t.applicant_id
+                LEFT JOIN ats_applicant_progress p
+                    ON t.progress_id = p.progress_id
+                LEFT JOIN sl_company_jobs j
+                    ON t.position_id = j.job_id
+                WHERE first_name = ? AND last_name = ? AND email_1 = ?
+        `; 
+        const values = [applicant.first_name, applicant.last_name, applicant.email_1]; 
+        const [result] = await pool.execute(sql, values); 
+
+        if (result.length > 0) {
+            console.log('existing applicant', result);
+            
+          return res.status(200).json({  message: "existing application", isExisting: true, existingRecord: result });  
+        }
+        return res.status(200).json({message: "no duplicates detected", isExisting: false})
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    } 
 }

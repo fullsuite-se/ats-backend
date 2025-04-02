@@ -7,4 +7,7 @@ const checkApplicantController = require("../../controllers/applicant/checkAppli
 //applicants/check/check-if-blacklisted
 router.post("/check-if-blacklisted", checkApplicantController.checkIfBlacklisted); 
 
+// /applicants/check/check-existing
+router.post("/check-existing", checkApplicantController.checkExistingApplication); 
+
 module.exports = router; 
