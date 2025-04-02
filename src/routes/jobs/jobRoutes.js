@@ -1,46 +1,35 @@
 const express = require("express");
-const {
-  deleteJob,
-  getJobDetails,
-  getJobs,
-  getFilteredAllJobsByIndustry,
-  getOpenJobs,
-  getFilteredOpenJobs,
-  insertJob,
-  searchJob,
-  updateJob,
-  getJobAssessmentUrl,
-  getOpenJobsCount,
-  getClosedJobsCount,
-  getJobsAdminFilteredByStatus,
-} = require("../../controllers/jobs/jobController");
+const jobController = require("../../controllers/jobs/jobController");
 
 const router = express.Router();
 
-router.get("/all-jobs", getJobs);
+router.get("/", jobController.getJobs);
 
-router.get("/all-jobs/:industry_id", getFilteredAllJobsByIndustry);
+router.get("/open", jobController.getOpenJobs);
 
-router.get("/all-open-jobs", getOpenJobs);
+router.get("/:industryId", jobController.getFilteredAllJobsByIndustry);
 
-router.get("/all-open-jobs/:industry_id", getFilteredOpenJobs);
+router.get("/open-filter/:industryId", jobController.getFilteredOpenJobs);
 
-router.get("/get-open-jobs-count", getOpenJobsCount);
+router.get("/open-count", jobController.getOpenJobsCount);
 
-router.get("/get-closed-jobs-count", getClosedJobsCount);
+router.get("/close-count", jobController.getClosedJobsCount);
 
-router.get("/get-job-details/:id", getJobDetails);
+router.get("/details/:id", jobController.getJobDetails);
 
-router.post("/get-job-assessment-url/", getJobAssessmentUrl);
+router.post("/assessment-url/", jobController.getJobAssessmentUrl);
 
-router.get("/get-jobs-filtered-by-status/:is_open", getJobsAdminFilteredByStatus);
+router.get(
+  "/filter-status/:isOpen",
+  jobController.getJobsAdminFilteredByStatus
+);
 
-router.post("/add-job", insertJob);
+router.post("/", jobController.insertJob);
 
-router.post("/edit-job", updateJob);
+router.put("/:jobId", jobController.updateJob);
 
-router.post("/delete-job", deleteJob);
+router.delete("/:jobId", jobController.deleteJob);
 
-router.get("/search-job/:search_val", searchJob);
+router.get("/search/:searchVal", jobController.searchJob);
 
 module.exports = router;
