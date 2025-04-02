@@ -18,16 +18,16 @@ exports.getJobs = async (req, res) => {
 
 exports.getFilteredAllJobsByIndustry = async (req, res) => {
   try {
-    const { industry_id } = req.params;
+    const { industryId } = req.params;
 
-    if (!industry_id) {
+    if (!industryId) {
       return res.status(400).json({
         success: false,
         message: "Missing required field: industry id",
       });
     }
 
-    const filteredJobs = await Job.getFilteredAllJobs(industry_id);
+    const filteredJobs = await Job.getFilteredAllJobs(industryId);
     res.status(200).json({ success: true, data: filteredJobs });
   } catch (err) {
     console.error("Error fetching open jobs:", err.message);
@@ -53,16 +53,16 @@ exports.getOpenJobs = async (req, res) => {
 
 exports.getFilteredOpenJobs = async (req, res) => {
   try {
-    const { industry_id } = req.params;
+    const { industryId } = req.params;
 
-    if (!industry_id) {
+    if (!industryId) {
       return res.status(400).json({
         success: false,
         message: "Missing required field: industry id",
       });
     }
 
-    const filteredJobs = await Job.getFilteredOpenJobs(industry_id);
+    const filteredJobs = await Job.getFilteredOpenJobs(industryId);
     res.status(200).json({ success: true, data: filteredJobs });
   } catch (err) {
     console.error("Error fetching open jobs:", err.message);
@@ -112,8 +112,8 @@ exports.getJobDetails = async (req, res) => {
 
 exports.getJobAssessmentUrl = async (req, res) => {
   try {
-    const { job_id } = req.body;
-    const assessmentUrl = await Job.getJobAssessmentUrl(job_id);
+    const { jobId } = req.body;
+    const assessmentUrl = await Job.getJobAssessmentUrl(jobId);
     res.status(200).json({ success: true, data: assessmentUrl });
   } catch (err) {
     console.log(err);
@@ -123,8 +123,8 @@ exports.getJobAssessmentUrl = async (req, res) => {
 
 exports.searchJob = async (req, res) => {
   try {
-    const { search_val } = req.params;
-    const searchResults = await Job.searchJob(search_val);
+    const { searchVal } = req.params;
+    const searchResults = await Job.searchJob(searchVal);
     res.status(200).json({ success: true, data: searchResults });
   } catch (err) {
     console.log(err);
@@ -144,11 +144,14 @@ exports.getJobsAdmin = async (req, res) => {
 
 exports.getJobsAdminFilteredByStatus = async (req, res) => {
   try {
-    const { is_open } = req.params;
-    const jobsFilteredByStatus = await Job.getJobsFilteredByStatus(is_open);
+    const { isOpen } = req.params;
+    const jobsFilteredByStatus = await Job.getJobsFilteredByStatus(isOpen);
     res.status(200).json({ success: true, data: jobsFilteredByStatus });
   } catch (err) {
-    console.error(`Error fetching jobs by status - is_open: ${is_open}`, err.message);
+    console.error(
+      `Error fetching jobs by status - is_open: ${is_open}`,
+      err.message
+    );
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
