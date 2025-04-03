@@ -1,3 +1,4 @@
+const { get } = require("../../app");
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
 
@@ -98,7 +99,21 @@ const insertApplicant = async (applicant, user_id=null) => {
     }
 };
 
+const getAllApplicants = async () => {
+    const sql = `
+        SELECT *
+        FROM ats_applicants
+        INNER JOIN ats_contact_infos USING (contact_id)
+    `;
+
+    try {
+        const [results, fields] = await pool.execute(sql);
+        return results;
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
+};
 
 
-
-module.exports = {insertApplicant}
+module.exports = {insertApplicant, getAllApplicants}

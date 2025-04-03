@@ -10,23 +10,6 @@ const positionModel = require("../../models/position/positionModel");
 const applicantModel = require("../../models/applicant/applicantModel"); 
 
 
-
-const getAllApplicants = async () => {
-    const sql = `
-        SELECT *
-        FROM ats_applicants
-        INNER JOIN ats_contact_infos USING (contact_id)
-    `;
-
-    try {
-        const [results, fields] = await pool.execute(sql);
-        return results;
-    } catch (error) {
-        console.error(error);
-        return [];
-    }
-};
-
 // Compare applicants for duplicates
 const compare = (applicant, applicantsFromDB) => {
     const possibleDuplicates = [];
@@ -75,7 +58,7 @@ const compare = (applicant, applicantsFromDB) => {
 
 exports.checkDuplicates = async (req, res) => {
     const applicant = JSON.parse(req.body.applicant);
-    const applicantsFromDB = await getAllApplicants();
+    const applicantsFromDB = await applicantModel.getAllApplicants();
 
     const possibleDuplicates = compare(applicant, applicantsFromDB);
     if (possibleDuplicates.length > 0) {
@@ -147,7 +130,7 @@ exports.uploadApplicants = [
         const flagged = [];
         const successfulInserts = [];
         const failedInserts = [];
-        const applicantsFromDB = await getAllApplicants();
+        const applicantsFromDB = await applicantModel.getAllApplicants();
   
         for (const applicant of applicants) {
           const possibleDuplicates = compare(applicant, applicantsFromDB);
