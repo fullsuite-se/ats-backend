@@ -32,9 +32,9 @@ const changePendingStatus = async (pending_applicant_id, status) => {
         UPDATE ats_pending_applicants 
         SET status = ?
         WHERE pending_applicant_id = ?
-    `; 
-    const values = [status, pending_applicant_id]; 
-    await pool.execute(sql, values); 
+    `;
+    const values = [status, pending_applicant_id];
+    await pool.execute(sql, values);
     return
 }
 
@@ -81,7 +81,7 @@ exports.confirmPendingApplicant = async (req, res) => {
     try {
         const pending_applicant_id = req.body.pending_applicant_id;
         console.log('id', pending_applicant_id);
-        
+
 
         const pendingApplicant = await getPendingApplicant(pending_applicant_id);
         //extract only the applicant
@@ -89,9 +89,9 @@ exports.confirmPendingApplicant = async (req, res) => {
 
         //pass it to the insert function 
         await applicantModel.insertApplicant(applicant);
-        
+
         //change the status to 0 to reflect that it is not pending. 
-        await changePendingStatus(pending_applicant_id, 0); 
+        await changePendingStatus(pending_applicant_id, 0);
 
         return res.status(201).json({ message: "successfully inserted" });
     } catch (error) {
@@ -101,11 +101,11 @@ exports.confirmPendingApplicant = async (req, res) => {
 
 }
 
-exports.rejectPendingApplicant = (req, res) => {
+exports.rejectPendingApplicant = async (req, res) => {
     try {
         const pending_applicant_id = req.body.pending_applicant_id;
 
-        changePendingStatus(pending_applicant_id, 0);
+        await changePendingStatus(pending_applicant_id, 0);
         res.status(200).json({ message: "successfully rejected (changed the status to 0)" });
     } catch (error) {
         res.status(500).json({ message: error.message });
