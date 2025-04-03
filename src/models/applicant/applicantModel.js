@@ -99,4 +99,6 @@ const insertApplicant = async (applicant, user_id=null) => {
 };
 
 
+
+
 module.exports = {insertApplicant}
