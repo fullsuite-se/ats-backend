@@ -3,7 +3,7 @@ const router = express.Router();
 
 const pendingApplicantController = require("../../controllers/applicant/pendingApplicantController")
 
-router.get("/", pendingApplicantController.getPendingApplicant);
+router.get("/", pendingApplicantController.getPendingApplicants);
 router.post("/", pendingApplicantController.addApplicantToPending); 
 router.post("/confirm", pendingApplicantController.confirmPendingApplicant);
 router.post("/reject", pendingApplicantController.rejectPendingApplicant);
