@@ -84,13 +84,13 @@ const userConfigurationRoutes = require("./routes/userConfiguration/userConfigur
 const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
 
 // Routes
+app.use("/applicants/pending", pendingApplicantRoutes); 
 app.use("/applicant/status-history", statusHistoryRoutes);
 app.use("/applicants", applicantRoutes);
 app.use("/applicants/add", addApplicantRoutes);
 app.use("/applicants/check", checkApplicantRoutes); 
 app.use("/applicant/edit", editApplicantRoutes);
 app.use("/applicant/update/status", updateStatusRoutes);
-app.use("/applicants/pending", pendingApplicantRoutes); 
 app.use("/counter", applicantCounterRoutes);
 app.use("/interview", interviewRoutes);
 app.use("/auth", loginRoutes);

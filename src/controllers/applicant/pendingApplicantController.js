@@ -33,8 +33,18 @@ exports.addApplicantToPending =async (req, res) => {
 }
 
 // get only where status = 1 (meaning open)
-exports.getPendingApplicant = (req, res) => {
-
+exports.getPendingApplicant = async (req, res) => {
+    try {
+        const sql = `
+            SELECT * 
+            FROM ats_pending_applicants 
+            WHERE status = 1;
+        `;
+        const [results] = await pool.execute(sql); 
+        return res.status(201).json({message: "successfully retrieved", pendingApplicants: results})
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
 }
 
 exports.confirmPendingApplicant = (req, res) => {
