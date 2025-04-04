@@ -23,6 +23,8 @@ const getPendingApplicant = async (pending_applicant_id) => {
         const [results] = await pool.execute(sql, values);
         return results[0];
     } catch (error) {
+        console.log(error.message);
+        
         return {};
     }
 }
@@ -86,6 +88,9 @@ exports.confirmPendingApplicant = async (req, res) => {
         const pendingApplicant = await getPendingApplicant(pending_applicant_id);
         //extract only the applicant
         const applicant = pendingApplicant.applicant;
+
+        console.log('applicant', applicant);
+        
 
         //pass it to the insert function 
         await applicantModel.insertApplicant(applicant);
