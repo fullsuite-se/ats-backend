@@ -2,54 +2,8 @@ const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
 const createTransporter = require("../../config/transporter");
 const { da } = require("date-fns/locale");
-
-const getApplicantInfo = async (applicant_id) => {
-    const sql = `
-            SELECT 
-                a.applicant_id,
-                a.first_name AS applicant_first_name,
-                a.middle_name AS applicant_middle_name,
-                a.last_name AS applicant_last_name,
-                a.gender,
-                a.birth_date,
-                a.discovered_at,
-                a.cv_link,
-                c.mobile_number_1,
-                c.mobile_number_2,
-                c.email_1,
-                c.email_2,
-                c.email_3
-            FROM ats_applicants a
-            JOIN ats_contact_infos c ON a.contact_id = c.contact_id
-            WHERE a.applicant_id = ?;
-    `;
-
-    const [results] = await pool.execute(sql, [applicant_id]);
-    return results[0];
-}
-
-const getUserInfo = async (user_id) => {
-    try {
-        const sql = `
-            SELECT
-                a.*,
-                i.*,
-                c.app_password
-            FROM hris_user_accounts a
-            INNER JOIN hris_user_infos i ON a.user_id = i.user_id
-            INNER JOIN ats_smtp_credentials c ON i.user_id = c.user_id
-            WHERE a.user_id = ?;
-        `;
-
-        const [results] = await pool.execute(sql, [user_id]);
-        return results[0];
-    } catch (error) {
-        console.log(error.message);
-        return [];
-
-    }
-
-}
+const applicantModel = require("../../models/applicant//applicantModel"); 
+const userModel = require("../../models/user/userModel");
 
 const emailSignature = (userData) => {
     // This returns formatted HTML data for the footer. 
@@ -75,7 +29,6 @@ const emailSignature = (userData) => {
         </div>
     `;
 };
-
 
 exports.addEmailTemplates = async (req, res) => {
     try {
@@ -116,8 +69,13 @@ exports.emailApplicant = async (req, res) => {
             return res.status(400).json({ message: "Missing required fields" });
         }
 
-        const applicantData = await getApplicantInfo(applicant_id);
-        const userData = await getUserInfo(user_id);
+        let applicantData = await applicantModel.getApplicant(applicant_id);
+        applicantData = applicantData[0]; 
+        console.log('applicant data', applicantData);
+        
+        const userData = await userModel.getUserInfo(user_id);
+        console.log('user data', userData);
+        
 
         const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
         const emailSignatureString = emailSignature(userData);
@@ -155,7 +113,7 @@ exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
     const USER_ID = process.env.USER_ID;
 
     try {
-        const userData = await getUserInfo(USER_ID);
+        const userData = await userModel.getUserInfo(USER_ID);
 
         const recipientEmails = [applicant.email_1];
         const emailSignatureString = emailSignature(userData);
