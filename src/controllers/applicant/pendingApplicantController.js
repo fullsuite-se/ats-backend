@@ -10,7 +10,7 @@ const pool = require("../../config/db");
 const { v4: uuidv4 } = require('uuid');
 const applicantModel = require("../../models/applicant/applicantModel");
 const { errorMonitor } = require("nodemailer/lib/xoauth2");
-
+const positionModel = require("../../models/position/positionModel"); 
 const getPendingApplicant = async (pending_applicant_id) => {
     try {
         const sql = `
@@ -63,19 +63,64 @@ exports.addApplicantToPending = async (req, res) => {
 }
 
 // get only where status = 1 (meaning open)
+// exports.getPendingApplicants = async (req, res) => {
+//     try {
+//         const positions = await positionModel.getPositions(); 
+//         console.log('positions', positions);
+        
+//         const sql = `
+//             SELECT * 
+//             FROM ats_pending_applicants 
+//             WHERE status = 1;
+//         `;
+//         const [results] = await pool.execute(sql);
+
+//         console.log('pending applicants: ', results);
+        
+//         return res.status(201).json({ message: "successfully retrieved", pendingApplicants: results })
+//     } catch (error) {
+//         return res.status(500).json({ message: error.message });
+//     }
+// }
+
 exports.getPendingApplicants = async (req, res) => {
     try {
+        const positions = await positionModel.getPositions(); 
+
+        
+        const positionMap = {};
+        for (const pos of positions) {
+            positionMap[pos.job_id] = pos.title;
+        }
+
         const sql = `
             SELECT * 
             FROM ats_pending_applicants 
             WHERE status = 1;
         `;
         const [results] = await pool.execute(sql);
-        return res.status(201).json({ message: "successfully retrieved", pendingApplicants: results })
+
+        const updatedResults = results.map(applicantEntry => {
+            const applicant = applicantEntry.applicant;
+            const jobTitle = positionMap[applicant.position_id] || 'Unknown Position';
+            return {
+                ...applicantEntry,
+                applicant: {
+                    ...applicant,
+                    title: jobTitle
+                }
+            };
+        });
+
+        return res.status(201).json({ 
+            message: "successfully retrieved", 
+            pendingApplicants: updatedResults 
+        });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
-}
+};
+
 
 exports.confirmPendingApplicant = async (req, res) => {
     try {
