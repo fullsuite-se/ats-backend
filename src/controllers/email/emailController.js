@@ -69,8 +69,13 @@ exports.emailApplicant = async (req, res) => {
             return res.status(400).json({ message: "Missing required fields" });
         }
 
-        const applicantData = await applicantModel.getApplicant(applicant_id);
+        let applicantData = await applicantModel.getApplicant(applicant_id);
+        applicantData = applicantData[0]; 
+        console.log('applicant data', applicantData);
+        
         const userData = await userModel.getUserInfo(user_id);
+        console.log('user data', userData);
+        
 
         const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
         const emailSignatureString = emailSignature(userData);
