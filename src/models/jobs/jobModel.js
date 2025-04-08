@@ -73,6 +73,12 @@ const Job = {
     return rows[0];
   },
 
+  getIndustriesCount: async () => {
+    const query = `SELECT COUNT(job_ind_id) AS count FROM sl_job_industries`;
+    const [rows] = await pool.query(query);
+    return rows[0];
+  },
+
   getJobDetails: async (job_id) => {
     const query = `
       SELECT 

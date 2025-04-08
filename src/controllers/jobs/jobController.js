@@ -51,6 +51,19 @@ exports.getOpenJobs = async (req, res) => {
   }
 };
 
+exports.getIndustriesCount = async (req, res) => {
+  try {
+    const industries = await Job.getIndustriesCount();
+    res.status(200).json({ success: true, data: industries });
+  } catch (err) {
+    console.error("Error fetching open jobs:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    })
+  }
+};
+
 exports.getFilteredOpenJobs = async (req, res) => {
   try {
     const { industryId } = req.params;
