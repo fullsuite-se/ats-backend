@@ -6,14 +6,17 @@ const applicantModel = require("../../models/applicant//applicantModel");
 const userModel = require("../../models/user/userModel");
 
 const emailSignature = (userData) => {
+    console.log('userdata: ', userData);
+    
+
     // This returns formatted HTML data for the footer. 
     const fullName = `${userData.first_name} ${userData.last_name}`;
-    const jobTitle = "HR Representative"; // Assuming title since it's not in data
-    const companyName = "Example Inc.";
-    const companyWebsite = "https://example.com";
+    const jobTitle = userData.job_title; // Assuming title since it's not in data
+    const companyName = userData.company_name;
+    const companyWebsite = "https://fullsuite.com";
     const contactNumber = userData.contact_number ? `📞 ${userData.contact_number}` : "";
-    const email = userData.personal_email ? `✉️ <a href="mailto:${userData.personal_email}" style="color: #007bff;">${userData.personal_email}</a>` : "";
-    const brandLogo = "https://media.licdn.com/dms/image/v2/D560BAQEDGebOpuJviQ/company-logo_200_200/company-logo_200_200/0/1690116252637/fullsuite_logo?e=2147483647&v=beta&t=o2nd-4DNYXQwJccynu5kw2Rv0tcd4yq_r8lXf_NQlak"; // Placeholder for company logo
+    const email = userData.user_email ? `✉️ <a href="mailto:${userData.user_email}" style="color: #007bff;">${userData.user_email}</a>` : "";
+    const brandLogo = userData.company_logo; 
 
     return `
         <div style="font-family: Arial, sans-serif; color: #333; padding: 10px; border-top: 2px solid #007bff;">
