@@ -11,9 +11,11 @@ router.get("/:industryId", jobController.getFilteredAllJobsByIndustry);
 
 router.get("/open-filter/:industryId", jobController.getFilteredOpenJobs);
 
-router.get("/open-count", jobController.getOpenJobsCount);
+router.get("/industries/count", jobController.getIndustriesCount)
 
-router.get("/close-count", jobController.getClosedJobsCount);
+router.get("/open/count", jobController.getOpenJobsCount);
+
+router.get("/close/count", jobController.getClosedJobsCount);
 
 router.get("/details/:id", jobController.getJobDetails);
 
