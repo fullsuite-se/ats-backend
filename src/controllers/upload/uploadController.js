@@ -5,6 +5,8 @@ const path = require("path");
 const gdrive = require("../../config/gdrive"); 
 require("dotenv").config();
 
+const COMPANY_ID = process.env.COMPANY_ID; 
+
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -42,7 +44,7 @@ exports.uploadCVGdrive = async (req, res) => {
         }
 
         const { buffer, originalname } = req.file;
-        const { fileId, fileUrl } = await gdrive.uploadFileToDrive(buffer, originalname);
+        const { fileId, fileUrl } = await gdrive.uploadFileToDrive(COMPANY_ID,buffer, originalname);
     
         res.json({ success: true, fileId, fileUrl }); // Return the file ID and sharable link
     } catch (error) {

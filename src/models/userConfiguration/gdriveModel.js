@@ -26,4 +26,4 @@ const getGdriveConfig = async (company_id) => {
     return {config_json, gdrive_folder_id}; 
 }
 
-module.exports = { addGdriveConfigurationCredentials }; 
+module.exports = { addGdriveConfigurationCredentials, getGdriveConfig }; 
