@@ -7,6 +7,8 @@ router.get("/", jobController.getJobs);
 
 router.get("/open", jobController.getOpenJobs);
 
+router.get("/close", jobController.getCloseJobs);
+
 router.get("/:industryId", jobController.getFilteredAllJobsByIndustry);
 
 router.get("/open-filter/:industryId", jobController.getFilteredOpenJobs);
