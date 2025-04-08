@@ -51,6 +51,19 @@ exports.getOpenJobs = async (req, res) => {
   }
 };
 
+exports.getCloseJobs = async (req, res) => {
+  try {
+    const closeJobs = await Job.getCloseJobs();
+    res.status(200).json({ success: true, data: closeJobs });
+  } catch (err) {
+    console.error("Error fetching closed jobs:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}
+ 
 exports.getIndustriesCount = async (req, res) => {
   try {
     const industries = await Job.getIndustriesCount();

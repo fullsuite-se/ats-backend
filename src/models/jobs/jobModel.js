@@ -1,4 +1,5 @@
 const pool = require("../../config/db");
+const { getCloseJobs } = require("../../controllers/jobs/jobController");
 const { search } = require("../../routes/jobs/jobRoutes");
 
 const Job = {
@@ -47,6 +48,21 @@ const Job = {
     return rows;
   },
 
+  getCloseJobs: async () => {
+    const query = `
+      SELECT 
+        job_id AS jobId, title AS jobTitle, industry_name AS industryName, employment_type AS employmentType,
+        setup_name AS setupName, description, salary_min AS salaryMin, salary_max AS salaryMax, responsibility,
+        requirement, preferred_qualification AS preferredQualification, is_open AS isOpen
+      FROM sl_company_jobs
+      JOIN sl_company_jobs_setups ON sl_company_jobs_setups.setup_id = sl_company_jobs.setup_id
+      JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id
+      WHERE is_open = 0 AND is_shown = 1
+    `;
+    const [rows] = await pool.query(query);
+    return rows;
+  },
+ 
   getFilteredOpenJobs: async (industry_id) => {
     const query = `
       SELECT 
