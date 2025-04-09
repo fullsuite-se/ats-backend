@@ -38,6 +38,20 @@ exports.getFilteredAllJobsByIndustry = async (req, res) => {
   }
 };
 
+exports.getJob = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const job = await Job.getJob(jobId);
+    res.status(200).json({ success: true, data: job });
+  } catch (err) {
+    console.error("Error fetching job:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+}
+
 exports.getOpenJobs = async (req, res) => {
   try {
     const openJobs = await Job.getOpenJobs();

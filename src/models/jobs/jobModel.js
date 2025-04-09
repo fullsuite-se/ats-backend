@@ -18,6 +18,22 @@ const Job = {
     return rows;
   },
 
+  getJob: async (jobId) => {
+    const query = `
+      SELECT 
+        job_id AS jobId, title AS jobTitle, industry_id AS industryId, industry_name AS industryName,
+        employment_type AS employmentType, sl_company_jobs.setup_id AS setupId, setup_name AS setupName,
+        description, salary_min AS salaryMin, salary_max AS salaryMax, responsibility, requirement,
+        preferred_qualification AS preferredQualification, is_open AS isOpen, is_shown AS isShown
+      FROM sl_company_jobs
+      JOIN sl_company_jobs_setups ON sl_company_jobs_setups.setup_id = sl_company_jobs.setup_id
+      JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id
+      WHERE job_id = ?
+    `;
+    const [rows] = await pool.query(query, [jobId]);
+    return rows;
+  },
+
   getFilteredAllJobs: async (industry_id) => {
     const query = `
       SELECT 

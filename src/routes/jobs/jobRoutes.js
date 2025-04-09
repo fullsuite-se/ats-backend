@@ -11,6 +11,8 @@ router.get("/close", jobController.getCloseJobs);
 
 router.get("/:industryId", jobController.getFilteredAllJobsByIndustry);
 
+router.get("/edit/:jobId", jobController.getJob);
+
 router.get("/open-filter/:industryId", jobController.getFilteredOpenJobs);
 
 router.get("/search/:searchVal", jobController.getSearchedJob)
