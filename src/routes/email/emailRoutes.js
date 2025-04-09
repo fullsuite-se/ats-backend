@@ -10,5 +10,5 @@ const emailController = require("../../controllers/email/emailController");
 router.post('/add/template', emailController.addEmailTemplates);
 router.get('/templates', emailController.emailTemplates);
 router.post("/applicant", upload.array('files', 10) , emailController.emailApplicant);
-
+router.post("/applicant/test-url", emailController.emailApplicantTestAssessment)
 module.exports = router;

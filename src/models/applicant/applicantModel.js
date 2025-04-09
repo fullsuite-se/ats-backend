@@ -172,8 +172,9 @@ const getApplicant = async (applicant_id) => {
                     j.employment_type,
                     j.is_open AS job_is_open,
                     j.created_at AS job_created_at,
-                    j.created_by AS job_created_by
+                    j.created_by AS job_created_by,
     
+                    i.*
                 FROM ats_applicants a
     
                 LEFT JOIN ats_contact_infos c
@@ -187,6 +188,9 @@ const getApplicant = async (applicant_id) => {
     
                 LEFT JOIN sl_company_jobs j
                     ON t.position_id = j.job_id
+
+                LEFT JOIN sl_job_industries i
+                    ON j.industry_id = i.job_ind_id
                 WHERE a.applicant_id = ?;
           `;
 
