@@ -280,7 +280,8 @@ exports.updateJob = async (req, res) => {
   try {
     const {
       jobId,
-      title,
+      jobTitle,
+      industryId,
       employmentType,
       setupId,
       description,
@@ -291,14 +292,15 @@ exports.updateJob = async (req, res) => {
       preferredQualification,
       isOpen,
       isShown,
-      user_id,
+      //user_id,
     } = req.body;
 
     if (
-      !title ||
+      !jobTitle ||
       !description ||
       !employmentType ||
       !setupId ||
+      !industryId ||
       isOpen === "" ||
       isOpen === undefined ||
       isShown === "" ||
@@ -311,12 +313,13 @@ exports.updateJob = async (req, res) => {
     }
 
     const updates = {
-      title,
+      title: jobTitle,
       employment_type: employmentType,
       setup_id: setupId,
+      industry_id: industryId,
       description,
-      salary_min: salaryMin ?? 0,
-      salary_max: salaryMax ?? 0,
+      salary_min: salaryMin,
+      salary_max: salaryMax,
       responsibility,
       requirement,
       preferred_qualification: preferredQualification,
