@@ -13,7 +13,7 @@ const emailSignature = (userData) => {
     const fullName = `${userData.first_name} ${userData.last_name}`;
     const jobTitle = userData.job_title; // Assuming title since it's not in data
     const companyName = userData.company_name;
-    const companyWebsite = "https://fullsuite.com";
+    const companyWebsite = `https://${userData.company_name}.com`;
     const contactNumber = userData.contact_number ? `📞 ${userData.contact_number}` : "";
     const email = userData.user_email ? `✉️ <a href="mailto:${userData.user_email}" style="color: #007bff;">${userData.user_email}</a>` : "";
     const brandLogo = userData.company_logo; 

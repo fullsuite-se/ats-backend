@@ -9,7 +9,7 @@ const getUserInfo = async (user_id) => {
                 c.*, 
                 d.*, 
                 t.*, 
-                ci.* 
+                ci.*
             FROM hris_user_accounts a
             LEFT JOIN hris_user_infos i ON a.user_id = i.user_id
             LEFT JOIN ats_smtp_credentials c ON i.user_id = c.user_id
@@ -23,13 +23,8 @@ const getUserInfo = async (user_id) => {
         return results[0];
     } catch (error) {
         console.log(error.message);
-        return [];
-
+        return null; // Return null instead of empty array for single user
     }
 }
 
-
-
-
-
-module.exports = {getUserInfo}
+module.exports = {getUserInfo};
