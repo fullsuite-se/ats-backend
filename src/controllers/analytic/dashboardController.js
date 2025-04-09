@@ -349,6 +349,7 @@ exports.getInterviewScheduleAnalytics = async (req, res) => {
         SELECT 
           i.interview_id,
           i.date_of_interview,
+          a.applicant_id,
           a.first_name,
           a.middle_name,
           a.last_name,
@@ -371,6 +372,7 @@ exports.getInterviewScheduleAnalytics = async (req, res) => {
         SELECT 
           i.interview_id,
           i.date_of_interview,
+          a.applicant_id,
           a.first_name,
           a.middle_name,
           a.last_name,
