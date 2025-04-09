@@ -2,12 +2,12 @@ const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
 const createTransporter = require("../../config/transporter");
 const { da } = require("date-fns/locale");
-const applicantModel = require("../../models/applicant//applicantModel"); 
+const applicantModel = require("../../models/applicant//applicantModel");
 const userModel = require("../../models/user/userModel");
 
 const emailSignature = (userData) => {
     console.log('userdata: ', userData);
-    
+
 
     // This returns formatted HTML data for the footer. 
     const fullName = `${userData.first_name} ${userData.last_name}`;
@@ -16,7 +16,7 @@ const emailSignature = (userData) => {
     const companyWebsite = `https://${userData.company_name}.com`;
     const contactNumber = userData.contact_number ? `📞 ${userData.contact_number}` : "";
     const email = userData.user_email ? `✉️ <a href="mailto:${userData.user_email}" style="color: #007bff;">${userData.user_email}</a>` : "";
-    const brandLogo = userData.company_logo; 
+    const brandLogo = userData.company_logo;
 
     return `
         <div style="font-family: Arial, sans-serif; color: #333; padding: 10px; border-top: 2px solid #007bff;">
@@ -73,12 +73,12 @@ exports.emailApplicant = async (req, res) => {
         }
 
         let applicantData = await applicantModel.getApplicant(applicant_id);
-        applicantData = applicantData[0]; 
+        applicantData = applicantData[0];
         console.log('applicant data', applicantData);
-        
+
         const userData = await userModel.getUserInfo(user_id);
         console.log('user data', userData);
-        
+
 
         const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
         const emailSignatureString = emailSignature(userData);
@@ -91,7 +91,7 @@ exports.emailApplicant = async (req, res) => {
 
         // Create mail options
         const mailOptions = {
-            from: `"FullSuite" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
@@ -109,6 +109,59 @@ exports.emailApplicant = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
+
+exports.emailApplicantTestAssessment = async (req, res) => {
+    try {
+        let { applicant_id, user_id } = req.body;
+
+        let applicantData = await applicantModel.getApplicant(applicant_id);
+        applicantData = applicantData[0];
+        console.log('applicant data', applicantData);
+
+        const userData = await userModel.getUserInfo(user_id);
+        console.log('user data', userData);
+
+        let email_subject = `Test Assessment`;
+        let email_body = `
+            <div>
+                <p>Hi ${applicantData.first_name},</p>
+
+                <p>Thank you for your interest in the ${applicantData.job_title} position at ${userData.company_name}.</p>
+
+                <p>As part of our hiring process, we would like you to complete a short assessment to help us better understand your skills and qualifications.</p>
+
+                <p>Please use the link to access and complete the assessment: <a href="${applicantData.assessment_url}">Start Assessment</a></p>
+
+                <p>If you have any questions or encounter any issues, feel free to reply to this email.</p>
+
+                <p>We look forward to reviewing your submission!</p>
+            </div>
+        `;
+
+        const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
+        const emailSignatureString = emailSignature(userData);
+        email_body = email_body + emailSignatureString;
+
+
+        // Create mail options
+        const mailOptions = {
+            from: `"${userData.company_name}" <${userData.user_email}>`,
+            to: recipientEmails,
+            subject: email_subject,
+            html: email_body,
+
+        };
+
+        //create transporter
+        const transporter = createTransporter({ email_user: userData.user_email, email_pass: userData.app_password })
+        const info = await transporter.sendMail(mailOptions);
+
+        res.status(200).json({ message: "Email sent successfully", info: info.response });
+    } catch (error) {
+        console.error("Error sending email:", error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
+    }
+}
 
 exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
     // we'll use a default user. 
