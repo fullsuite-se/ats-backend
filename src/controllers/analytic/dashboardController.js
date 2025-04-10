@@ -5,36 +5,58 @@ const pool = require("../../config/db");
  */
 exports.getDashboardSummary = async (req, res) => {
     try {
-        const { company_id } = req.query;
+        const { company_id, month, year } = req.query;
 
         let summaryQuery;
         let queryParams = [];
+        let dateFilter = '';
+
+        // Build date filter condition if month/year provided
+        if (month && year) {
+            dateFilter = 'AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(t.created_at) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(t.created_at) = ?';
+        }
 
         if (company_id) {
             summaryQuery = `
         SELECT
-          (SELECT COUNT(*) FROM ats_applicant_trackings WHERE company_id = ?) AS total_applicants,
+          (SELECT COUNT(*) FROM ats_applicant_trackings t WHERE t.company_id = ? ${dateFilter}) AS total_applicants,
           (SELECT COUNT(*) FROM ats_applicant_trackings t
            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-           WHERE t.company_id = ? AND p.status = 'JOB_OFFER_ACCEPTED') AS hired_applicants,
+           WHERE t.company_id = ? AND p.status = 'JOB_OFFER_ACCEPTED' ${dateFilter}) AS hired_applicants,
           (SELECT COUNT(*) FROM ats_applicant_trackings t
            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-           WHERE t.company_id = ? AND p.stage = 'INTERVIEW_SCHEDULE') AS in_interview,
+           WHERE t.company_id = ? AND p.stage = 'INTERVIEW_SCHEDULE' ${dateFilter}) AS in_interview,
           (SELECT COUNT(*) FROM sl_company_jobs WHERE company_id = ? AND is_open = 1) AS open_positions
       `;
-            queryParams = [company_id, company_id, company_id, company_id];
+            
+            // Add parameters for each query
+            queryParams = [company_id];
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
+            
+            // Repeat parameters for each subquery
+            queryParams = [...queryParams, ...queryParams, ...queryParams, company_id];
         } else {
             summaryQuery = `
         SELECT
-          (SELECT COUNT(*) FROM ats_applicant_trackings) AS total_applicants,
+          (SELECT COUNT(*) FROM ats_applicant_trackings t WHERE 1=1 ${dateFilter}) AS total_applicants,
           (SELECT COUNT(*) FROM ats_applicant_trackings t
            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-           WHERE p.status = 'JOB_OFFER_ACCEPTED') AS hired_applicants,
+           WHERE p.status = 'JOB_OFFER_ACCEPTED' ${dateFilter}) AS hired_applicants,
           (SELECT COUNT(*) FROM ats_applicant_trackings t
            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-           WHERE p.stage = 'INTERVIEW_SCHEDULE') AS in_interview,
+           WHERE p.stage = 'INTERVIEW_SCHEDULE' ${dateFilter}) AS in_interview,
           (SELECT COUNT(*) FROM sl_company_jobs WHERE is_open = 1) AS open_positions
       `;
+            
+            if (month && year) queryParams = [parseInt(month), parseInt(year), parseInt(month), parseInt(year), parseInt(month), parseInt(year)];
+            else if (month) queryParams = [parseInt(month), parseInt(month), parseInt(month)];
+            else if (year) queryParams = [parseInt(year), parseInt(year), parseInt(year)];
         }
 
         const [summary] = await pool.execute(summaryQuery, queryParams);
@@ -54,10 +76,20 @@ exports.getDashboardSummary = async (req, res) => {
  */
 exports.getApplicantStatusDistribution = async (req, res) => {
     try {
-        const { company_id } = req.query;
+        const { company_id, month, year } = req.query;
 
         let statusQuery;
         let queryParams = [];
+        let dateFilter = '';
+
+        // Build date filter
+        if (month && year) {
+            dateFilter = 'AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(t.created_at) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(t.created_at) = ?';
+        }
 
         if (company_id) {
             statusQuery = `
@@ -67,11 +99,16 @@ exports.getApplicantStatusDistribution = async (req, res) => {
           COUNT(*) as count
         FROM ats_applicant_trackings t
         JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-        WHERE t.company_id = ?
+        WHERE t.company_id = ? ${dateFilter}
         GROUP BY p.stage, p.status
         ORDER BY p.stage, count DESC
       `;
             queryParams = [company_id];
+            
+            // Add date parameters if provided
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
         } else {
             statusQuery = `
         SELECT 
@@ -80,9 +117,14 @@ exports.getApplicantStatusDistribution = async (req, res) => {
           COUNT(*) as count
         FROM ats_applicant_trackings t
         JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+        WHERE 1=1 ${dateFilter}
         GROUP BY p.stage, p.status
         ORDER BY p.stage, count DESC
       `;
+            
+            if (month && year) queryParams = [parseInt(month), parseInt(year)];
+            else if (month) queryParams = [parseInt(month)];
+            else if (year) queryParams = [parseInt(year)];
         }
 
         const [statusDistribution] = await pool.execute(statusQuery, queryParams);
@@ -96,16 +138,25 @@ exports.getApplicantStatusDistribution = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch applicant status distribution" });
     }
 };
-
 /**
- * Get applicant source distribution
+ * Get applicant source distribution with month/year filtering
  */
 exports.getApplicantSourceDistribution = async (req, res) => {
     try {
-        const { company_id } = req.query;
-
+        const { company_id, month, year } = req.query;
+        
         let sourceQuery;
         let queryParams = [];
+        let dateFilter = '';
+        
+        // Build date filter condition
+        if (month && year) {
+            dateFilter = 'AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(t.created_at) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(t.created_at) = ?';
+        }
 
         if (company_id) {
             sourceQuery = `
@@ -114,20 +165,31 @@ exports.getApplicantSourceDistribution = async (req, res) => {
             COUNT(*) as count
           FROM ats_applicants a
           JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
-          WHERE t.company_id = ?
+          WHERE t.company_id = ? ${dateFilter}
           GROUP BY discovered_at
           ORDER BY count DESC
         `;
             queryParams = [company_id];
+            
+            // Add date parameters if provided
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
         } else {
             sourceQuery = `
           SELECT 
             discovered_at AS applied_source, 
             COUNT(*) as count
-          FROM ats_applicants
+          FROM ats_applicants a
+          JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
+          WHERE 1=1 ${dateFilter}
           GROUP BY discovered_at
           ORDER BY count DESC
         `;
+            
+            if (month && year) queryParams = [parseInt(month), parseInt(year)];
+            else if (month) queryParams = [parseInt(month)];
+            else if (year) queryParams = [parseInt(year)];
         }
 
         const [sourceDistribution] = await pool.execute(sourceQuery, queryParams);
@@ -143,14 +205,24 @@ exports.getApplicantSourceDistribution = async (req, res) => {
 };
 
 /**
- * Get job position analytics
+ * Get job position analytics with month/year filtering
  */
 exports.getJobPositionAnalytics = async (req, res) => {
     try {
-        const { company_id } = req.query;
-
+        const { company_id, month, year } = req.query;
+        
         let jobPositionQuery;
         let queryParams = [];
+        let dateFilter = '';
+        
+        // Build date filter condition
+        if (month && year) {
+            dateFilter = 'AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(t.created_at) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(t.created_at) = ?';
+        }
 
         if (company_id) {
             jobPositionQuery = `
@@ -162,11 +234,16 @@ exports.getJobPositionAnalytics = async (req, res) => {
         FROM sl_company_jobs j
         LEFT JOIN ats_applicant_trackings t ON j.job_id = t.position_id
         LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-        WHERE j.company_id = ?
+        WHERE j.company_id = ? ${dateFilter}
         GROUP BY j.job_id, j.title
         ORDER BY applicant_count DESC
       `;
             queryParams = [company_id];
+            
+            // Add date parameters if provided
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
         } else {
             jobPositionQuery = `
         SELECT 
@@ -177,9 +254,14 @@ exports.getJobPositionAnalytics = async (req, res) => {
         FROM sl_company_jobs j
         LEFT JOIN ats_applicant_trackings t ON j.job_id = t.position_id
         LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+        WHERE 1=1 ${dateFilter}
         GROUP BY j.job_id, j.title
         ORDER BY applicant_count DESC
       `;
+            
+            if (month && year) queryParams = [parseInt(month), parseInt(year)];
+            else if (month) queryParams = [parseInt(month)];
+            else if (year) queryParams = [parseInt(year)];
         }
 
         const [jobPositionData] = await pool.execute(jobPositionQuery, queryParams);
@@ -195,74 +277,27 @@ exports.getJobPositionAnalytics = async (req, res) => {
 };
 
 /**
- * Get monthly applicant trends
- */
-exports.getMonthlyApplicantTrends = async (req, res) => {
-    try {
-        const { company_id, year } = req.query;
-        const currentYear = year || new Date().getFullYear();
-
-        let monthlyTrendsQuery;
-        let queryParams = [];
-
-        if (company_id) {
-            monthlyTrendsQuery = `
-        SELECT 
-          MONTH(t.created_at) as month,
-          COUNT(*) as applicant_count,
-          SUM(CASE WHEN p.stage = 'JOB_OFFER' AND p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) as hired_count
-        FROM ats_applicant_trackings t
-        LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-        WHERE t.company_id = ? AND YEAR(t.created_at) = ?
-        GROUP BY MONTH(t.created_at)
-        ORDER BY month
-      `;
-            queryParams = [company_id, parseInt(currentYear)];
-        } else {
-            monthlyTrendsQuery = `
-        SELECT 
-          MONTH(t.created_at) as month,
-          COUNT(*) as applicant_count,
-          SUM(CASE WHEN p.stage = 'JOB_OFFER' AND p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) as hired_count
-        FROM ats_applicant_trackings t
-        LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-        WHERE YEAR(t.created_at) = ?
-        GROUP BY MONTH(t.created_at)
-        ORDER BY month
-      `;
-            queryParams = [parseInt(currentYear)];
-        }
-
-        const [monthlyTrends] = await pool.execute(monthlyTrendsQuery, queryParams);
-
-        // Fill in missing months with zero counts
-        const completeMonthlyTrends = Array(12).fill().map((_, idx) => {
-            const existingData = monthlyTrends.find(item => item.month === idx + 1);
-            return existingData || { month: idx + 1, applicant_count: 0, hired_count: 0 };
-        });
-
-        res.status(200).json({
-            success: true,
-            data: completeMonthlyTrends
-        });
-    } catch (error) {
-        console.error("Error fetching monthly applicant trends:", error.message);
-        res.status(500).json({ message: "Failed to fetch monthly applicant trends" });
-    }
-};
-
-/**
- * Get recent applicants
+ * Get recent applicants with month/year filtering
  */
 exports.getRecentApplicants = async (req, res) => {
     try {
-        const { company_id } = req.query;
+        const { company_id, month, year, limit: limitParam } = req.query;
         // Default limit to 10 if not provided
         let limit = 10;
+        let dateFilter = '';
+        
+        // Build date filter condition
+        if (month && year) {
+            dateFilter = 'AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(t.created_at) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(t.created_at) = ?';
+        }
 
         // Only attempt to parse limit if it exists in the query
-        if (req.query.limit) {
-            limit = parseInt(req.query.limit, 10);
+        if (limitParam) {
+            limit = parseInt(limitParam, 10);
             // Ensure it's a positive number
             if (isNaN(limit) || limit <= 0) {
                 limit = 10;
@@ -273,7 +308,6 @@ exports.getRecentApplicants = async (req, res) => {
         let queryParams = [];
 
         if (company_id) {
-            // For MySQL2, modify the query to use direct integer in LIMIT instead of parameterized value
             recentApplicantsQuery = `
           SELECT 
             a.applicant_id,
@@ -289,13 +323,16 @@ exports.getRecentApplicants = async (req, res) => {
           JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
           JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
           JOIN sl_company_jobs j ON t.position_id = j.job_id
-          WHERE t.company_id = ?
+          WHERE t.company_id = ? ${dateFilter}
           ORDER BY t.created_at DESC
           LIMIT ${limit}
         `;
-
             queryParams = [company_id];
-
+            
+            // Add date parameters if provided
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
         } else {
             recentApplicantsQuery = `
           SELECT 
@@ -312,15 +349,15 @@ exports.getRecentApplicants = async (req, res) => {
           JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
           JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
           JOIN sl_company_jobs j ON t.position_id = j.job_id
+          WHERE 1=1 ${dateFilter}
           ORDER BY t.created_at DESC
           LIMIT ${limit}
         `;
-
-            queryParams = [];
+            
+            if (month && year) queryParams = [parseInt(month), parseInt(year)];
+            else if (month) queryParams = [parseInt(month)];
+            else if (year) queryParams = [parseInt(year)];
         }
-
-        console.log("Query:", recentApplicantsQuery);
-        console.log("Params:", queryParams);
 
         const [recentApplicants] = await pool.execute(recentApplicantsQuery, queryParams);
 
@@ -333,16 +370,27 @@ exports.getRecentApplicants = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch recent applicants" });
     }
 };
+
 /**
- * Get interview schedule analytics
+ * Get interview schedule analytics with month/year filtering
  */
 exports.getInterviewScheduleAnalytics = async (req, res) => {
     try {
-        const { company_id } = req.query;
+        const { company_id, month, year } = req.query;
         const days = req.query.days ? parseInt(req.query.days) : 7;
-
+        
         let interviewQuery;
         let queryParams = [];
+        let dateFilter = '';
+        
+        // Build date filter for interviews
+        if (month && year) {
+            dateFilter = 'AND MONTH(i.date_of_interview) = ? AND YEAR(i.date_of_interview) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(i.date_of_interview) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(i.date_of_interview) = ?';
+        }
 
         if (company_id) {
             interviewQuery = `
@@ -364,9 +412,15 @@ exports.getInterviewScheduleAnalytics = async (req, res) => {
         WHERE t.company_id = ? 
         AND i.date_of_interview >= CURDATE() 
         AND i.date_of_interview <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+        ${dateFilter}
         ORDER BY i.date_of_interview
       `;
             queryParams = [company_id, days];
+            
+            // Add date parameters if provided
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
         } else {
             interviewQuery = `
         SELECT 
@@ -386,9 +440,14 @@ exports.getInterviewScheduleAnalytics = async (req, res) => {
         JOIN hris_user_infos u ON i.interviewer_id = u.user_id
         WHERE i.date_of_interview >= CURDATE() 
         AND i.date_of_interview <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+        ${dateFilter}
         ORDER BY i.date_of_interview
       `;
             queryParams = [days];
+            
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
         }
 
         const [interviewSchedules] = await pool.execute(interviewQuery, queryParams);
@@ -404,11 +463,11 @@ exports.getInterviewScheduleAnalytics = async (req, res) => {
 };
 
 /**
- * Get hiring funnel metrics
+ * Get hiring funnel metrics with added month/year filtering
  */
 exports.getHiringFunnelMetrics = async (req, res) => {
     try {
-        const { company_id, position_id, date_from, date_to } = req.query;
+        const { company_id, position_id, date_from, date_to, month, year } = req.query;
 
         let hiringFunnelQuery = `
       SELECT 
@@ -443,6 +502,20 @@ exports.getHiringFunnelMetrics = async (req, res) => {
             hiringFunnelQuery += " AND t.created_at <= ?";
             queryParams.push(date_to);
         }
+        
+        // Alternative month/year filtering if date range not provided
+        if (!date_from && !date_to) {
+            if (month && year) {
+                hiringFunnelQuery += " AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?";
+                queryParams.push(parseInt(month), parseInt(year));
+            } else if (month) {
+                hiringFunnelQuery += " AND MONTH(t.created_at) = ?";
+                queryParams.push(parseInt(month));
+            } else if (year) {
+                hiringFunnelQuery += " AND YEAR(t.created_at) = ?";
+                queryParams.push(parseInt(year));
+            }
+        }
 
         const [hiringFunnel] = await pool.execute(hiringFunnelQuery, queryParams);
 
@@ -457,11 +530,11 @@ exports.getHiringFunnelMetrics = async (req, res) => {
 };
 
 /**
- * Get time-to-hire metrics
+ * Get time-to-hire metrics with month/year filtering
  */
 exports.getTimeToHireMetrics = async (req, res) => {
     try {
-        const { company_id, position_id } = req.query;
+        const { company_id, position_id, month, year } = req.query;
 
         let timeToHireQuery = `
       SELECT 
@@ -489,6 +562,18 @@ exports.getTimeToHireMetrics = async (req, res) => {
             timeToHireQuery += " AND t.position_id = ?";
             queryParams.push(position_id);
         }
+        
+        // Add month/year filtering
+        if (month && year) {
+            timeToHireQuery += " AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?";
+            queryParams.push(parseInt(month), parseInt(year));
+        } else if (month) {
+            timeToHireQuery += " AND MONTH(t.created_at) = ?";
+            queryParams.push(parseInt(month));
+        } else if (year) {
+            timeToHireQuery += " AND YEAR(t.created_at) = ?";
+            queryParams.push(parseInt(year));
+        }
 
         timeToHireQuery += " GROUP BY j.job_id, j.title";
 
@@ -503,3 +588,61 @@ exports.getTimeToHireMetrics = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch time-to-hire metrics" });
     }
 };
+
+/**
+ * Get monthly applicant trends with month/year filtering
+ */
+exports.getMonthlyApplicantTrends = async (req, res) => {
+    try {
+      const { company_id, year } = req.query;
+      const currentYear = year || new Date().getFullYear();
+  
+      let monthlyTrendsQuery;
+      let queryParams = [];
+  
+      if (company_id) {
+        monthlyTrendsQuery = `
+          SELECT 
+            MONTH(t.created_at) as month,
+            COUNT(*) as applicant_count,
+            SUM(CASE WHEN p.stage = 'JOB_OFFER' AND p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) as hired_count
+          FROM ats_applicant_trackings t
+          LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+          WHERE t.company_id = ? AND YEAR(t.created_at) = ?
+          GROUP BY MONTH(t.created_at)
+          ORDER BY month
+        `;
+        queryParams = [company_id, parseInt(currentYear)];
+      } else {
+        monthlyTrendsQuery = `
+          SELECT 
+            MONTH(t.created_at) as month,
+            COUNT(*) as applicant_count,
+            SUM(CASE WHEN p.stage = 'JOB_OFFER' AND p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) as hired_count
+          FROM ats_applicant_trackings t
+          LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+          WHERE YEAR(t.created_at) = ?
+          GROUP BY MONTH(t.created_at)
+          ORDER BY month
+        `;
+        queryParams = [parseInt(currentYear)];
+      }
+  
+      const [monthlyTrends] = await pool.execute(monthlyTrendsQuery, queryParams);
+  
+      // Fill in missing months with zero counts
+      const completeMonthlyTrends = Array(12).fill().map((_, idx) => {
+        const existingData = monthlyTrends.find(item => item.month === idx + 1);
+        return existingData || { month: idx + 1, applicant_count: 0, hired_count: 0 };
+      });
+  
+      res.status(200).json({
+        success: true,
+        data: completeMonthlyTrends
+      });
+    } catch (error) {
+      console.error("Error fetching monthly applicant trends:", error.message);
+      res.status(500).json({ message: "Failed to fetch monthly applicant trends" });
+    }
+  };
+
