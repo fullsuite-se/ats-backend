@@ -54,7 +54,8 @@ const Job = {
       SELECT 
         job_id AS jobId, title AS jobTitle, industry_name AS industryName, employment_type AS employmentType,
         setup_name AS setupName, description, salary_min AS salaryMin, salary_max AS salaryMax, responsibility,
-        requirement, preferred_qualification AS preferredQualification, is_open AS isOpen
+        requirement, preferred_qualification AS preferredQualification, is_open AS isOpen, is_shown AS isShown,
+        industry_id AS industryId, sl_company_jobs.setup_id AS setupId
       FROM sl_company_jobs
       JOIN sl_company_jobs_setups ON sl_company_jobs_setups.setup_id = sl_company_jobs.setup_id
       JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id
@@ -69,7 +70,8 @@ const Job = {
       SELECT 
         job_id AS jobId, title AS jobTitle, industry_name AS industryName, employment_type AS employmentType,
         setup_name AS setupName, description, salary_min AS salaryMin, salary_max AS salaryMax, responsibility,
-        requirement, preferred_qualification AS preferredQualification, is_open AS isOpen
+        requirement, preferred_qualification AS preferredQualification, is_open AS isOpen, is_shown AS isShown,
+        industry_id AS industryId, sl_company_jobs.setup_id AS setupId
       FROM sl_company_jobs
       JOIN sl_company_jobs_setups ON sl_company_jobs_setups.setup_id = sl_company_jobs.setup_id
       JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id
@@ -124,7 +126,6 @@ const Job = {
       JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id 
       WHERE title LIKE ?
     `;
-    console.log(searchValue)
     const [rows] = await pool.query(query, [searchValue + '%']); 
     return rows;
   },
