@@ -221,11 +221,11 @@ exports.insertJob = async (req, res) => {
       employmentType,
       setupId,
       description,
-      salaryMin,
-      salaryMax,
-      responsibility,
-      requirement,
-      preferredQualification,
+      maxSalary,
+      minSalary,
+      responsibilities,
+      requirements,
+      preferredQualifications,
       isOpen,
       isShown,
       userId,
@@ -249,21 +249,23 @@ exports.insertJob = async (req, res) => {
     const newJob = {
       job_id: uuidv7(),
       company_id: process.env.COMPANY_ID,
-      title,
+      title: title,
       industry_id: industryId,
       employment_type: employmentType,
       setup_id: setupId,
       description,
-      salary_min: salaryMin,
-      salary_max: salaryMax,
-      responsibility,
-      requirement,
-      preferred_qualification: preferredQualification,
+      salary_min: minSalary,
+      salary_max: maxSalary,
+      responsibility: responsibilities,
+      requirement: requirements,
+      preferred_qualification: preferredQualifications,
       is_open: isOpen,
       is_shown: isShown,
       created_at: now(),
       created_by: userId,
     };
+
+    console.log(newJob);
 
     await Job.insertJob(newJob);
 
