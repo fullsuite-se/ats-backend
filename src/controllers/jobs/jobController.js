@@ -50,7 +50,7 @@ exports.getJob = async (req, res) => {
       message: "Internal Server Error",
     });
   }
-}
+};
 
 exports.getOpenJobs = async (req, res) => {
   try {
@@ -76,8 +76,8 @@ exports.getCloseJobs = async (req, res) => {
       message: "Internal Server Error",
     });
   }
-}
- 
+};
+
 exports.getIndustriesCount = async (req, res) => {
   try {
     const industries = await Job.getIndustriesCount();
@@ -87,7 +87,7 @@ exports.getIndustriesCount = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
-    })
+    });
   }
 };
 
@@ -101,7 +101,7 @@ exports.getSearchedJob = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal Server Error",
-    })
+    });
   }
 };
 
@@ -166,8 +166,14 @@ exports.getJobDetails = async (req, res) => {
 
 exports.getJobAssessmentUrl = async (req, res) => {
   try {
-    const { jobId } = req.body;
-    const assessmentUrl = await Job.getJobAssessmentUrl(jobId);
+    const { job_id } = req.body;
+
+    console.log(job_id);
+    
+    const assessmentUrl = await Job.getJobAssessmentUrl(job_id);
+
+    console.log(assessmentUrl);
+
     res.status(200).json({ success: true, data: assessmentUrl });
   } catch (err) {
     console.log(err);

@@ -146,7 +146,7 @@ const Job = {
 
   getJobAssessmentUrl: async (job_id) => {
     const query = `
-      SELECT job_id AS jobId, assessment_url AS assessmentUrl 
+      SELECT assessment_url AS assessmentUrl 
       FROM sl_company_jobs
       INNER JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id
       WHERE job_id = ?

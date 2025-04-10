@@ -9,6 +9,8 @@ router.get("/open", jobController.getOpenJobs);
 
 router.get("/close", jobController.getCloseJobs);
 
+router.post("/assessment-url/", jobController.getJobAssessmentUrl);
+
 router.get("/:industryId", jobController.getFilteredAllJobsByIndustry);
 
 router.get("/edit/:jobId", jobController.getJob);
@@ -24,8 +26,6 @@ router.get("/open/count", jobController.getOpenJobsCount);
 router.get("/close/count", jobController.getClosedJobsCount);
 
 router.get("/details/:id", jobController.getJobDetails);
-
-router.post("/assessment-url/", jobController.getJobAssessmentUrl);
 
 router.get(
   "/filter-status/:isOpen",
