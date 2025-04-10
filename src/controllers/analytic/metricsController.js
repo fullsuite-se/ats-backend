@@ -3,12 +3,23 @@ const metricModel = require("../../models/analytic/metricModel");
 
 exports.getMetrics = async (req, res) => {
     try {
-        const applicationsReceived = await metricModel.f_applicationsReceived();
-        const topJobs = await metricModel.f_topJobs();
-        const internalExternalHires = await metricModel.f_InternalExternalHires();
-        const dropOffRate = await metricModel.f_dropOffRate();
+        const { month, year } = req.query;
+        
+        // Log the filtering parameters for debugging
 
+        
+        // Pass month and year parameters to all metric functions
+        const applicationsReceived = await metricModel.f_applicationsReceived(month, year);
+        const topJobs = await metricModel.f_topJobs(month, year);
+        const internalExternalHires = await metricModel.f_InternalExternalHires(month, year);
+        const dropOffRate = await metricModel.f_dropOffRate(month, year);
+
+        // Include the applied filters in the response
         res.json({
+            filters: {
+                month: month || null,
+                year: year || null
+            },
             applicationsReceived,
             topJobs,
             internalExternalHires,
