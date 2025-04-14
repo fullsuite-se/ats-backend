@@ -44,7 +44,6 @@ module.exports.requestReset = async (req, res) => {
     }
 }
 
-
 module.exports.verifyOTP = async (req, res) => {
     const { user_email, otp_code } = req.body;
 
@@ -91,7 +90,7 @@ module.exports.resetPassword = async (req, res) => {
     if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired', proceed: false });
 
     const hashedPassword = await bcrypt.hash(newPassword, 10); 
-    await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE user_email = ?`, [hashedPassword, user_email]); 
+    await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE password_reset_id = ? AND user_email = ?`, [hashedPassword, record.password_reset_id, user_email]); 
     await pool.execute(`UPDATE ats_password_resets SET used = TRUE WHERE password_reset_id = ?`, [record.password_reset_id])
 }
 
