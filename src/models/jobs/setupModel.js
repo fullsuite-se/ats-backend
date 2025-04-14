@@ -7,7 +7,7 @@ const Setup = {
         setup_id AS setupId, 
         setup_name AS setupName, 
         created_at AS createdAt,
-        CONCAT(hris_user_infos.first_name, ' ', LEFT(hris_user_infos.middle_name, 1), '. ', hris_user_infos.last_name) AS createdBy
+        CONCAT(hris_user_infos.first_name, ' ', hris_user_infos.last_name) AS createdBy
       FROM sl_company_jobs_setups
       INNER JOIN hris_user_infos ON hris_user_infos.user_id = sl_company_jobs_setups.created_by
     `;
