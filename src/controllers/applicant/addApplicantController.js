@@ -102,77 +102,62 @@ exports.addApplicant = async (req, res) => {
 
 // when applied from ATS, add the user_id to created_by and updated_by
 exports.uploadApplicants = [
-  upload.none(),
-  async (req, res) => {
-    try {
-      console.log("Request body received:", req.body);
-
-      if (!req.body.applicants) {
-        return res.status(400).json({ message: "No applicants data found in request" });
-      }
-
-      const applicants = JSON.parse(req.body.applicants);
-      console.log("Parsed applicants:", applicants);
-
-      const positions = await positionModel.getPositions();
-
-      if (!Array.isArray(applicants)) {
-        return res.status(400).json({ message: "Applicants data is not an array" });
-      }
-
-      // Map position to position_id
-      const positionMap = new Map(positions.map(pos => [pos.title, pos.job_id]));
-
-      applicants.forEach(applicant => {
-        if (applicant.position && positionMap.has(applicant.position)) {
-          applicant.position_id = positionMap.get(applicant.position);
-        } else {
-          applicant.position_id = null; // or handle missing positions appropriately
+    upload.none(),
+    async (req, res) => {
+      try {
+        console.log("Request body received:", req.body);
+        if (!req.body.applicants) {
+          return res.status(400).json({ message: "No applicants data found in request" });
         }
-      });
-
-      console.log(applicants);
-
-
-      const flagged = [];
-      const successfulInserts = [];
-      const failedInserts = [];
-      const applicantsFromDB = await applicantModel.getAllApplicants();
-
-      for (const applicant of applicants) {
-        const possibleDuplicates = compare(applicant, applicantsFromDB);
-
-        if (possibleDuplicates.length > 0) {
-          flagged.push({ applicant: applicant, possibleDuplicates: possibleDuplicates });
-        } else {
-          try {
-            const isInserted = await applicantModel.insertApplicant(applicant);
-            if (isInserted) {
-              console.log("Applicant inserted successfully:", applicant);
-              successfulInserts.push(applicant);
-            } else {
-              console.log("Failed to insert applicant:", applicant);
-              failedInserts.push({ applicant, reason: "Database insert returned false" });
+        const applicants = JSON.parse(req.body.applicants);
+        console.log("Parsed applicants:", applicants);
+        const positions = await positionModel.getPositions();
+        if (!Array.isArray(applicants)) {
+          return res.status(400).json({ message: "Applicants data is not an array" });
+        }
+        // Map position to position_id
+        const positionMap = new Map(positions.map(pos => [pos.title, pos.job_id]));
+        applicants.forEach(applicant => {
+          if (applicant.position && positionMap.has(applicant.position)) {
+            applicant.position_id = positionMap.get(applicant.position);
+          } else {
+            applicant.position_id = null;
+          }
+        });
+        console.log(applicants);
+        const flagged = [];
+        const successfulInserts = [];
+        const failedInserts = [];
+        const applicantsFromDB = await applicantModel.getAllApplicants();
+        for (const applicant of applicants) {
+          const possibleDuplicates = compare(applicant, applicantsFromDB);
+          if (possibleDuplicates.length > 0) {
+            flagged.push({ applicant: applicant, possibleDuplicates: possibleDuplicates });
+          } else {
+            try {
+              const isInserted = await applicantModel.insertApplicant(applicant);
+              if (isInserted) {
+                console.log("Applicant inserted successfully:", applicant);
+                successfulInserts.push(applicant);
+              } else {
+                console.log("Failed to insert applicant:", applicant);
+                failedInserts.push({ applicant, reason: "Database insert returned false" });
+              }
+            } catch (insertError) {
+              console.error("Error inserting applicant:", insertError);
+              failedInserts.push({ applicant, reason: insertError.message });
             }
-          } catch (insertError) {
-            console.error("Error inserting applicant:", insertError);
-            failedInserts.push({ applicant, reason: insertError.message });
           }
         }
+        return res.status(200).json({
+          message: `Processed ${applicants.length} applicants. Inserted: ${successfulInserts.length}, Flagged: ${flagged.length}, Failed: ${failedInserts.length}`,
+          flagged: flagged,
+          successful: successfulInserts.length,
+          failed: failedInserts.length > 0 ? failedInserts : undefined
+        });
+      } catch (error) {
+        console.error("Error processing applicants:", error);
+        res.status(500).json({ message: "Error processing applicants", error: error.message });
       }
-
-      return res.status(200).json({
-        message: `Processed ${applicants.length} applicants. Inserted: ${successfulInserts.length}, Flagged: ${flagged.length}, Failed: ${failedInserts.length}`,
-        flagged: flagged,
-        successful: successfulInserts.length,
-        failed: failedInserts.length > 0 ? failedInserts : undefined
-      });
-    } catch (error) {
-      console.error("Error processing applicants:", error);
-      res.status(500).json({ message: "Error processing applicants", error: error.message });
     }
-  }
-];
-
-
-
+  ];
