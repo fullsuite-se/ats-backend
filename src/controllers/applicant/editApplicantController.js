@@ -19,9 +19,9 @@ console.log("applicant" + JSON.stringify(applicant));
       applicant.first_name,
       applicant.middle_name || null,
       applicant.last_name,
-      applicant.gender,
-      applicant.birth_date,
-      applicant.discovered_at,
+      applicant.gender || null,
+      applicant.birth_date || null,
+      applicant.discovered_at || null,
       applicant.cv_link || null,
       applicant.applicant_id
     ];
