@@ -70,14 +70,14 @@ exports.checkDuplicates = async (req, res) => {
 // when applied from ATS, add the user_id to created_by and updated_by
 exports.addApplicant = async (req, res) => {
     try {
-        console.log("Request body:", req.body); // Log the entire request body
+        console.log("Request body:", req.body); 
 
         if (!req.body.applicant) {
             return res.status(400).json({ message: "Applicant data is missing" });
         }
 
         const applicant = JSON.parse(req.body.applicant);
-        console.log("Parsed applicant:", applicant); // Log the parsed applicant
+        console.log("Parsed applicant:", applicant); 
 
         const isSuccess = await applicantModel.insertApplicant(applicant);
         if (isSuccess) {
@@ -120,7 +120,7 @@ exports.uploadApplicants = [
           if (applicant.position && positionMap.has(applicant.position)) {
             applicant.position_id = positionMap.get(applicant.position);
           } else {
-            applicant.position_id = null; // or handle missing positions appropriately
+            applicant.position_id = null; 
           }
         });
 

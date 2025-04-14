@@ -56,9 +56,9 @@ const insertApplicant = async (applicant, user_id = null) => {
             applicant.middle_name || null,
             applicant.last_name,
             contact_id,
-            applicant.gender,
+            applicant.gender || null,
             applicant.birth_date,
-            applicant.discovered_at, // Store as string
+            applicant.discovered_at || null, // Store as string
             applicant.cv_link || null
         ];
         await connection.execute(sql, values);
