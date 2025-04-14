@@ -15,12 +15,13 @@ exports.getAllIndustries = async () => {
 exports.getAllIndustriesHR = async () => {
   const query = `
     SELECT job_ind_id AS industryId, industry_name AS industryName, assessment_url AS assessmentUrl,
-      CONCAT(hris_user_infos.first_name, ' ', LEFT(hris_user_infos.middle_name, 1), '. ', hris_user_infos.last_name) AS createdBy,
+      CONCAT(hris_user_infos.first_name, ' ', hris_user_infos.last_name) AS createdBy,
       created_at AS createdAt
     FROM sl_job_industries
     JOIN hris_user_infos ON hris_user_infos.user_id = sl_job_industries.created_by
   `;
   const [industries] = await pool.query(query);
+  console.log(industries)
   return industries;
 };
 
