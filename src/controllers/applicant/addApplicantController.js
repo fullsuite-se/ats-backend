@@ -9,6 +9,8 @@ const emailController = require("../email/emailController");
 const positionModel = require("../../models/position/positionModel");
 const applicantModel = require("../../models/applicant/applicantModel");
 
+//DEFAULT 
+const USER_ID = process.env.USER_ID; 
 
 // Compare applicants for duplicates
 const compare = (applicant, applicantsFromDB) => {
@@ -88,7 +90,7 @@ exports.addApplicant = async (req, res) => {
 
     // Send test email if from FS
     if (!isFromATS) {
-      await emailController.emailTestAssessment(applicant_id, applicant.user_id);
+      await emailController.emailTestAssessment(applicant_id, USER_ID);
     }
 
     return res.status(201).json({ message: "successfully inserted" });
