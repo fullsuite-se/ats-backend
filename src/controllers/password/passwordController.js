@@ -46,5 +46,25 @@ module.exports.requestReset = async (req, res) => {
 
 
 module.exports.verifyOTP = async (req, res) => {
-    
+    const {user_email, otp_code} = req.body; 
+
+    const sql = `
+        SELECT *
+        FROM password_resets 
+        WHERE 
+            user_email = ? AND
+            otp_code = ? AND 
+            used = FALSE 
+        LIMIT 1
+        
+    `;
+    const values = [user_email, otp_code]; 
+
+    const [rows] = await pool.execute(sql, values); 
+    const record = rows[0]; 
+
+    if (!record) return res.status(400).json({ error: 'Invalid or expired OTP', proceed: false });
+    if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired',  proceed: false });
+
+    res.status(200).json({message: 'otp verified', proceed: true})
 }
