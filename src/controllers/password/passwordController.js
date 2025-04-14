@@ -2,7 +2,7 @@ const { pool } = require("../../config/db");
 const createTransporter = require("../../config/transporter");
 const userModel = require("../../models/user/userModel");
 const { v4: uuidv4 } = require("uuid");
-
+const bcrypt = require("bcryptjs");
 
 module.exports.requestReset = async (req, res) => {
     // default user. 
@@ -19,7 +19,7 @@ module.exports.requestReset = async (req, res) => {
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         //insert into password reset table 
-        const sql = `INSERT INTO password_resets (password_reset_id, user_email, otp_code, expires_at) VALUES (?, ?, ?, ?)`;
+        const sql = `INSERT INTO ats_password_resets (password_reset_id, user_email, otp_code, expires_at) VALUES (?, ?, ?, ?)`;
         const values = [password_reset_id, user_email, otp, expiresAt];
         await pool.execute(sql, values);
 
@@ -46,11 +46,11 @@ module.exports.requestReset = async (req, res) => {
 
 
 module.exports.verifyOTP = async (req, res) => {
-    const {user_email, otp_code} = req.body; 
+    const { user_email, otp_code } = req.body;
 
     const sql = `
         SELECT *
-        FROM password_resets 
+        FROM ats_password_resets 
         WHERE 
             user_email = ? AND
             otp_code = ? AND 
@@ -58,13 +58,40 @@ module.exports.verifyOTP = async (req, res) => {
         LIMIT 1
         
     `;
-    const values = [user_email, otp_code]; 
+    const values = [user_email, otp_code];
 
-    const [rows] = await pool.execute(sql, values); 
-    const record = rows[0]; 
+    const [rows] = await pool.execute(sql, values);
+    const record = rows[0];
 
     if (!record) return res.status(400).json({ error: 'Invalid or expired OTP', proceed: false });
-    if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired',  proceed: false });
+    if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired', proceed: false });
 
-    res.status(200).json({message: 'otp verified', proceed: true})
+    res.status(200).json({ message: 'otp verified', proceed: true })
 }
+
+
+module.exports.resetPassword = async (req, res) => {
+    const { user_email, otp_code, newPassword } = req.body;
+
+    const sql = `
+        SELECT *
+        FROM ats_password_resets 
+        WHERE 
+            user_email = ? AND
+            otp_code = ? AND 
+            used = FALSE 
+        LIMIT 1
+    `;
+    const values = [user_email, otp_code];
+
+    const [rows] = await pool.execute(sql, values);
+    const record = rows[0];
+
+    if (!record) return res.status(400).json({ error: 'Invalid or expired OTP', proceed: false });
+    if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired', proceed: false });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10); 
+    await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE user_email = ?`, [hashedPassword, user_email]); 
+    await pool.execute(`UPDATE ats_password_resets SET used = TRUE WHERE password_reset_id = ?`, [record.password_reset_id])
+}
+
