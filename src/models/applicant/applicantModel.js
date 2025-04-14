@@ -41,7 +41,7 @@ const insertApplicant = async (applicant, user_id = null) => {
             applicant.test_result || null,
             applicant.applied_source || null,
             applicant.referrer_name || null,
-            "468eb32f-f8c1-11ef-a725-0af0d960a833", //company id
+            process.env.COMPANY_ID,
             applicant.position_id,
         ];
         await connection.execute(sql, values);
