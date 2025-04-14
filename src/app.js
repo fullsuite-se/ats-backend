@@ -86,6 +86,9 @@ const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
 //dashboard
 const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
 
+//password - for password reset
+const passwordRoutes = require("./routes/password/passwordRoutes"); 
+
 // Routes
 app.use("/applicants/pending", pendingApplicantRoutes); 
 app.use('/analytics/dashboard', dashboardRoutes);
@@ -111,6 +114,7 @@ app.use("/industries", industryRoutes);
 app.use("/jobs", jobRoutes);
 app.use("/setups", setupRoutes);
 app.use("/user-configuration", userConfigurationRoutes);
+app.use("/password", passwordRoutes);
 
 const verifyToken = require("./middlewares/verifyToken");
 

@@ -7,8 +7,6 @@ const userModel = require("../../models/user/userModel");
 
 const emailSignature = (userData) => {
     console.log('userdata: ', userData);
-
-
     // This returns formatted HTML data for the footer. 
     const fullName = `${userData.first_name} ${userData.last_name}`;
     const jobTitle = userData.job_title; // Assuming title since it's not in data
