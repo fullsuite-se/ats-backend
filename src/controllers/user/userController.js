@@ -8,9 +8,11 @@ const getUserInfoSQL = `
         hris_user_infos.middle_name, 
         hris_user_infos.last_name, 
         hris_user_infos.user_pic, 
+        hris_user_designations.company_id,
         JSON_OBJECTAGG(service_features.service_feature_id, service_features.feature_name) AS feature_names
     FROM hris_user_accounts
     LEFT JOIN hris_user_infos ON hris_user_accounts.user_id = hris_user_infos.user_id
+    LEFT JOIN hris_user_designations ON hris_user_infos.user_id = hris_user_designations.user_id
     LEFT JOIN hris_user_access_permissions ON hris_user_accounts.user_id = hris_user_access_permissions.user_id
     LEFT JOIN service_features ON hris_user_access_permissions.service_feature_id = service_features.service_feature_id
     WHERE hris_user_accounts.user_id = ?
@@ -19,7 +21,8 @@ const getUserInfoSQL = `
         hris_user_infos.first_name, 
         hris_user_infos.middle_name, 
         hris_user_infos.last_name, 
-        hris_user_infos.user_pic
+        hris_user_infos.user_pic,
+        hris_user_designations.company_id
 `;
 
 exports.getUserInfo = async (req, res) => {
