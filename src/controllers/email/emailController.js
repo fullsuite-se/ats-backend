@@ -110,53 +110,66 @@ exports.emailApplicant = async (req, res) => {
     }
 };
 
-exports.emailApplicantTestAssessment = async (req, res) => {
+//the function that actually sent the test assessment. 
+exports.emailTestAssessment = async (applicant_id, user_id) => {
     try {
-        let { applicant_id, user_id } = req.body;
-
         let applicantData = await applicantModel.getApplicant(applicant_id);
         applicantData = applicantData[0];
         console.log('applicant data', applicantData);
-
+    
         const userData = await userModel.getUserInfo(user_id);
         console.log('user data', userData);
-
+    
         let email_subject = `Test Assessment`;
         let email_body = `
             <div>
                 <p>Hi ${applicantData.first_name},</p>
-
+    
                 <p>Thank you for your interest in the ${applicantData.job_title} position at ${userData.company_name}.</p>
-
+    
                 <p>As part of our hiring process, we would like you to complete a short assessment to help us better understand your skills and qualifications.</p>
-
+    
                 <p>Please use the link to access and complete the assessment: <a href="${applicantData.assessment_url}">Start Assessment</a></p>
-
+    
                 <p>If you have any questions or encounter any issues, feel free to reply to this email.</p>
-
+    
                 <p>We look forward to reviewing your submission!</p>
             </div>
         `;
-
+    
         const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
         const emailSignatureString = emailSignature(userData);
         email_body = email_body + emailSignatureString;
-
-
+    
+    
         // Create mail options
         const mailOptions = {
             from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
-
+    
         };
-
+    
         //create transporter
         const transporter = createTransporter({ email_user: userData.user_email, email_pass: userData.app_password })
         const info = await transporter.sendMail(mailOptions);
+    
+        return info.response; 
+    } catch (error) {
+        console.log("error sending email: ", error.message);
+        return null; 
+    }
+}
 
-        res.status(200).json({ message: "Email sent successfully", info: info.response });
+//endpoint that only calls the sending processes. 
+exports.emailApplicantTestAssessment = async (req, res) => {
+    try {
+        let { applicant_id, user_id } = req.body;
+        
+        const response = emailTestAssessment(applicant_id, user_id); 
+
+        res.status(200).json({ message: "Email sent successfully", info: response });
     } catch (error) {
         console.error("Error sending email:", error);
         res.status(500).json({ message: "Internal server error", error: error.message });
