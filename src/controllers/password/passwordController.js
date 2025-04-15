@@ -52,14 +52,13 @@ module.exports.verifyOTP = async (req, res) => {
         FROM ats_password_resets 
         WHERE 
             user_email = ? AND
-            otp_code = ? AND 
-            used = FALSE 
-        LIMIT 1
-        
+            otp_code = ? AND  
     `;
     const values = [user_email, otp_code];
 
     const [rows] = await pool.execute(sql, values);
+    console.log('resutl', rows);
+    
     const record = rows[0];
 
     if (!record) return res.status(400).json({ error: 'Invalid or expired OTP', proceed: false });
@@ -91,6 +90,9 @@ module.exports.resetPassword = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10); 
     await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE password_reset_id = ? AND user_email = ?`, [hashedPassword, record.password_reset_id, user_email]); 
-    await pool.execute(`UPDATE ats_password_resets SET used = TRUE WHERE password_reset_id = ?`, [record.password_reset_id])
+    await pool.execute(`UPDATE ats_password_resets SET used = TRUE WHERE password_reset_id = ?`, [record.password_reset_id]);
+
+
+    return res.status(200).json({message: "password updated successfully"})
 }
 
