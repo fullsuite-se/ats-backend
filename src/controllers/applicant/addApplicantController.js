@@ -137,11 +137,7 @@ exports.uploadApplicants = [
             try {
 
               //map the status to stage
-              const formattedStatus = applicant.status 
-              ? applicant.status.toUpperCase().replace(/ /g, '_') 
-              : 'PRE_SCREENING';
-              
-              const mappedStage = stageMapping.mapStatusToStage(formattedStatus); 
+              const mappedStage = stageMapping.mapStatusToStage(applicant.status); 
               applicant.stage = mappedStage; 
 
               const isInserted = await applicantModel.insertApplicant(applicant);
