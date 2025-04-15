@@ -1,4 +1,4 @@
-const { pool } = require("../../config/db");
+const  pool = require("../../config/db");
 const createTransporter = require("../../config/transporter");
 const userModel = require("../../models/user/userModel");
 const { v4: uuidv4 } = require("uuid");
@@ -53,7 +53,10 @@ module.exports.verifyOTP = async (req, res) => {
         WHERE 
             user_email = ? AND
             otp_code = ? AND  
+        LIMIT 1
     `;
+
+
     const values = [user_email, otp_code];
 
     const [rows] = await pool.execute(sql, values);
@@ -66,6 +69,30 @@ module.exports.verifyOTP = async (req, res) => {
     res.status(200).json({ message: 'otp verified', proceed: true });
 }
 
+module.exports.verifyOTP = async (req, res) => {
+    try {
+        const { user_email, otp_code } = req.body;
+
+        console.log(req.body);
+        
+        const sql = `
+            SELECT *
+            FROM ats_password_resets
+            WHERE user_email = ? AND otp_code = ?
+            LIMIT 1
+        `;
+        const values = [user_email, otp_code];
+
+        const [rows, fields] = await pool.execute(sql, values);
+
+        return res.status(200).json({ message: "fetched", rows: rows });
+
+    } catch (error) {
+        console.log(error.message);
+        
+        return res.status(500).json({ message: error.message });
+    }
+}
 
 module.exports.resetPassword = async (req, res) => {
     const { user_email, otp_code, newPassword } = req.body;
