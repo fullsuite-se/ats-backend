@@ -59,11 +59,13 @@ exports.insertIndustry = async (industryName, assessmentUrl, userId) => {
   await pool.query(query, newIndustry);
 };
 
-exports.updateIndustry = async (jobIndId, industryName, assessmentUrl) => {
+exports.updateIndustry = async (jobIndId, industryName, assessmentUrl, userId) => {
+  console.log(jobIndId);
+  
   const query = `
-    UPDATE sl_job_industries SET industry_name = ?, assessment_url = ? WHERE job_ind_id = ?
+    UPDATE sl_job_industries SET industry_name = ?, assessment_url = ?, created_by = ?, created_at = ? WHERE job_ind_id = ?
   `;
-  const [result] = await pool.query(query, [industryName, assessmentUrl, jobIndId]);
+  const [result] = await pool.query(query, [industryName, assessmentUrl, userId ,now(), jobIndId]);
   return result.affectedRows;
 };
 
