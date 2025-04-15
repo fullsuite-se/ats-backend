@@ -73,8 +73,9 @@ exports.insertIndustry = async (req, res) => {
 
 exports.updateIndustry = async (req, res) => {
   try {
-    const { jobIndId, industryName, assessmentUrl } = req.body;
-    if (!jobIndId || !industryName || !assessmentUrl) {
+    const { userId, industryName, assessmentUrl } = req.body;
+    const { industryId } = req.params;
+    if (!industryId || !industryName || !assessmentUrl || !userId) {
       return res.status(400).json({
         success: false,
         message:
@@ -83,9 +84,10 @@ exports.updateIndustry = async (req, res) => {
     }
 
     const updated = await Industry.updateIndustry(
-      jobIndId,
+      industryId,
       industryName,
-      assessmentUrl
+      assessmentUrl,
+      userId
     );
     if (!updated) {
       return res
