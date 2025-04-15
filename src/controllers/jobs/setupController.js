@@ -37,13 +37,14 @@ exports.insertSetup = async (req, res) => {
 
 exports.updateSetup = async (req, res) => {
   try {
-    const { setupId, setupName } = req.body;
+    const { userId, setup_name } = req.body;
+    const { setupId } = req.params;
 
-    if (!setupId || !setupName) {
+    if (!userId || !setup_name) {
       return res.status(400).json({ success: false, message: "Missing required fields: setup id or setup name" });
     }
 
-    const result = await Setup.updateSetup(setupId, setupName);
+    const result = await Setup.updateSetup(userId, setup_name, setupId);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: "Setup not found or not updated" });
