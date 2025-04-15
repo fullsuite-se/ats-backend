@@ -34,6 +34,15 @@ exports.getAllIndustriesPR = async () => {
   return industries;
 };
 
+exports.patchIndustryImage = async (image_url, industry_id) => {
+  const query = `
+    UPDATE sl_job_industries
+    SET image_url = ?
+    WHERE job_ind_id = ?
+  `;
+  await pool.query(query, [image_url, industry_id])
+}
+
 exports.insertIndustry = async (industryName, assessmentUrl, userId) => {
   const query = `
     INSERT INTO sl_job_industries SET ?
