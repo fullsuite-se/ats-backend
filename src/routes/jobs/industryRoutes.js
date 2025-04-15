@@ -9,6 +9,8 @@ router.get("/hr", industryController.getAllIndustriesHR);
 
 router.get("/pr", industryController.getAllIndustriesPR);
 
+router.patch("/pr", industryController.patchIndustryImagePR);
+
 router.post("/", industryController.insertIndustry);
 
 router.put("/:industryId", industryController.updateIndustry);
