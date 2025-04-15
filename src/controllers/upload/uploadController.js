@@ -3,6 +3,7 @@ const cloudinary = require('cloudinary').v2;
 const fs = require("fs");
 const path = require("path");
 const gdrive = require("../../config/gdrive"); 
+const stream = require("stream");
 require("dotenv").config();
 
 const COMPANY_ID = process.env.COMPANY_ID; 
@@ -37,6 +38,48 @@ exports.uploadCV = async (req, res) => {
     }
 }
 
+// Upload File to Google Drive
+async function uploadFileToDrive(company_id, fileBuffer, fileName) {
+  const { driveService, gdrive_folder_id } = await gdrive.getDriveService(company_id);
+
+  const fileMetadata = {
+    name: fileName,
+    parents: [gdrive_folder_id],
+  };
+
+  const bufferStream = new stream.PassThrough();
+  bufferStream.end(fileBuffer);
+
+  const media = {
+    mimeType: "application/octet-stream",
+    body: bufferStream,
+  };
+
+  const response = await driveService.files.create({
+    resource: fileMetadata,
+    media: media,
+    fields: "id",
+  });
+
+  const fileId = response.data.id;
+
+  // Make it publicly accessible
+  await driveService.permissions.create({
+    fileId,
+    requestBody: {
+      role: "reader",
+      type: "anyone",
+    },
+  });
+
+  const fileData = await driveService.files.get({
+    fileId: fileId,
+    fields: "webViewLink",
+  });
+
+  return { fileId, fileUrl: fileData.data.webViewLink };
+}
+
 exports.uploadCVGdrive = async (req, res) => {
     try {
         if (!req.file) {
@@ -44,7 +87,7 @@ exports.uploadCVGdrive = async (req, res) => {
         }
 
         const { buffer, originalname } = req.file;
-        const { fileId, fileUrl } = await gdrive.uploadFileToDrive(COMPANY_ID,buffer, originalname);
+        const { fileId, fileUrl } = await uploadFileToDrive(COMPANY_ID,buffer, originalname);
     
         res.json({ success: true, fileId, fileUrl }); // Return the file ID and sharable link
     } catch (error) {
