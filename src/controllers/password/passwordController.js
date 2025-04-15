@@ -66,30 +66,39 @@ module.exports.verifyOTP = async (req, res) => {
 
 
 module.exports.resetPassword = async (req, res) => {
-    const { user_email, otp_code, newPassword } = req.body;
+    try {
+        const { user_email, otp_code, newPassword } = req.body;
 
-    const sql = `
-        SELECT *
-        FROM ats_password_resets 
-        WHERE 
-            user_email = ? AND
-            otp_code = ? AND 
-            used = FALSE 
-        LIMIT 1
-    `;
-    const values = [user_email, otp_code];
+        const sql = `
+            SELECT *
+            FROM ats_password_resets 
+            WHERE 
+                user_email = ? AND
+                otp_code = ? AND 
+                used = FALSE 
+            LIMIT 1
+        `;
+        const values = [user_email, otp_code];
 
-    const [rows] = await pool.execute(sql, values);
-    const record = rows[0];
+        const [rows] = await pool.execute(sql, values);
+        const record = rows[0];
 
-    if (!record) return res.status(400).json({ error: 'Invalid or expired OTP', proceed: false });
-    if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired', proceed: false });
+        if (!record) return res.status(400).json({ error: 'Invalid or expired OTP', proceed: false, success: false });
+        if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired', proceed: false, success: false });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10); 
-    await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE user_email = ?`, [hashedPassword, user_email]); 
-    await pool.execute(`UPDATE ats_password_resets SET used = TRUE WHERE password_reset_id = ?`, [record.password_reset_id]);
+        const hashedPassword = await bcrypt.hash(newPassword, 10); 
+        await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE user_email = ?`, [hashedPassword, user_email]); 
+        await pool.execute(`UPDATE ats_password_resets SET used = TRUE WHERE password_reset_id = ?`, [record.password_reset_id]);
 
-
-    return res.status(200).json({message: "password updated successfully"})
+        return res.status(200).json({
+            message: "Password updated successfully",
+            success: true
+        });
+    } catch (error) {
+        console.error("Error resetting password:", error);
+        return res.status(500).json({ 
+            error: error.message,
+            success: false
+        });
+    }
 }
-
