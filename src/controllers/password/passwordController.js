@@ -48,15 +48,10 @@ module.exports.verifyOTP = async (req, res) => {
     const { user_email, otp_code } = req.body;
 
     const sql = `
-        SELECT *
-        FROM ats_password_resets 
-        WHERE 
-            user_email = ? AND
-            otp_code = ? AND  
-        LIMIT 1
+    SELECT *
+    FROM ats_password_resets
+    WHERE user_email = ? AND otp_code = ?
     `;
-
-
     const values = [user_email, otp_code];
 
     const [rows] = await pool.execute(sql, values);
@@ -69,30 +64,6 @@ module.exports.verifyOTP = async (req, res) => {
     res.status(200).json({ message: 'otp verified', proceed: true });
 }
 
-module.exports.verifyOTP = async (req, res) => {
-    try {
-        const { user_email, otp_code } = req.body;
-
-        console.log(req.body);
-        
-        const sql = `
-            SELECT *
-            FROM ats_password_resets
-            WHERE user_email = ? AND otp_code = ?
-            LIMIT 1
-        `;
-        const values = [user_email, otp_code];
-
-        const [rows, fields] = await pool.execute(sql, values);
-
-        return res.status(200).json({ message: "fetched", rows: rows });
-
-    } catch (error) {
-        console.log(error.message);
-        
-        return res.status(500).json({ message: error.message });
-    }
-}
 
 module.exports.resetPassword = async (req, res) => {
     const { user_email, otp_code, newPassword } = req.body;
@@ -115,7 +86,7 @@ module.exports.resetPassword = async (req, res) => {
     if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired', proceed: false });
 
     const hashedPassword = await bcrypt.hash(newPassword, 10); 
-    await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE password_reset_id = ? AND user_email = ?`, [hashedPassword, record.password_reset_id, user_email]); 
+    await pool.execute(`UPDATE hris_user_accounts SET user_password = ? WHERE user_email = ?`, [hashedPassword, user_email]); 
     await pool.execute(`UPDATE ats_password_resets SET used = TRUE WHERE password_reset_id = ?`, [record.password_reset_id]);
 
 
