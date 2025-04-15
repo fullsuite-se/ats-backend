@@ -80,7 +80,7 @@ const Job = {
     const [rows] = await pool.query(query);
     return rows;
   },
- 
+
   getFilteredOpenJobs: async (industry_id) => {
     const query = `
       SELECT 
@@ -97,13 +97,21 @@ const Job = {
   },
 
   getOpenJobsCount: async () => {
-    const query = `SELECT COUNT(job_id) AS count FROM sl_company_jobs WHERE is_open = 1`;
+    const query = `
+      SELECT COUNT(job_id) AS count 
+      FROM sl_company_jobs 
+      WHERE is_open = 1 AND is_shown = 1
+    `;
     const [rows] = await pool.query(query);
     return rows[0];
   },
 
   getClosedJobsCount: async () => {
-    const query = `SELECT COUNT(job_id) AS count FROM sl_company_jobs WHERE is_open = 0`;
+    const query = `
+      SELECT COUNT(job_id) AS count 
+      FROM sl_company_jobs 
+      WHERE is_open = 0 AND is_shown = 1
+    `;
     const [rows] = await pool.query(query);
     return rows[0];
   },
@@ -126,7 +134,7 @@ const Job = {
       JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id 
       WHERE title LIKE ?
     `;
-    const [rows] = await pool.query(query, [searchValue + '%']); 
+    const [rows] = await pool.query(query, [searchValue + "%"]);
     return rows;
   },
 
@@ -175,4 +183,4 @@ const Job = {
   },
 };
 
-module.exports = Job;   
+module.exports = Job;
