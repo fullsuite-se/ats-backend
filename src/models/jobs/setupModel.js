@@ -1,4 +1,5 @@
 const pool = require("../../config/db.js");
+const { now } = require("../../utils/date.js");
 
 const Setup = {
   getAllSetups: async () => {
@@ -21,9 +22,9 @@ const Setup = {
     await pool.query(query, newSetup);
   },
 
-  updateSetup: async (setup_id, setup_name) => {
-    const query = `UPDATE sl_company_jobs_setups SET setup_name = ? WHERE setup_id = ?`;
-    const [result] = await pool.query(query, [setup_name, setup_id]);
+  updateSetup: async (user_id, setup_name, setup_id) => {
+    const query = `UPDATE sl_company_jobs_setups SET setup_name = ?, created_by = ?, created_at = ? WHERE setup_id = ?`;
+    const [result] = await pool.query(query, [setup_name, user_id, now(), setup_id]);
     return result.affectedRows;
   },
 
