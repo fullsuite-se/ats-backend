@@ -56,7 +56,7 @@ const insertApplicant = async (applicant, user_id = null) => {
                 applicant.middle_name || null,
                 applicant.last_name,
                 ids.contact_id,
-                applicant.gender,
+                applicant.gender || null,
                 applicant.birth_date,
                 applicant.discovered_at,
                 applicant.cv_link || null

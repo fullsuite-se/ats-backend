@@ -1,12 +1,13 @@
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require('uuid');
 const emailController = require("../../controllers/email/emailController"); 
+const statusMapping =  require("../../utils/statusMapping"); 
 
 const updateStatus = async (progress_id, user_id, status, change_date = null) => {
     converted_status = status.toUpperCase().replace(/ /g, "_");
 
     // get the corresponding stage based on status
-    let stage = updateStage(converted_status);
+    let stage = statusMapping.mapStatusToStage(converted_status);
 
     try {
         // Get the current status before updating
@@ -67,28 +68,6 @@ const updateStatus = async (progress_id, user_id, status, change_date = null) =>
     }
 };
 
-const updateStage = (status) => {
-    let pre_screening = ["UNPROCESSED", "PRE_SCREENING", "TEST_SENT"];
-    let interview_schedule = ["INTERVIEW_SCHEDULE_SENT", "PHONE_INTERVIEW", "FIRST_INTERVIEW", "SECOND_INTERVIEW", "THIRD_INTERVIEW", "FOURTH_INTERVIEW", "FOLLOW_UP_INTERVIEW", "FINAL_INTERVIEW"];
-    let job_offer = ["FOR_DECISION_MAKING", "FOR_JOB_OFFER", "JOB_OFFER_REJECTED", "JOB_OFFER_ACCEPTED", "FOR_FUTURE_POOLING"];
-    let unsuccessful =["WITHDREW_APPLICATION","GHOSTED", "BLACKLISTED", "NOT_FIT"];
-
-    if (status == pre_screening.includes(status)) {
-        return "PRE_SCREENING";
-    }
-    else if (interview_schedule.includes(status)) {
-        return "INTERVIEW_SCHEDULE";
-    }
-    else if (job_offer.includes(status)) {
-        return "JOB_OFFER";
-    }
-    else if (unsuccessful.includes(status)) {
-        return "UNSUCCESSFUL";
-    }
-    else {
-        return "PRE_SCREENING";
-    }
-};
 
 exports.updateApplicantStatus = async (req, res) => {
     const { progress_id, applicant_id, user_id, status, change_date, previous_status } = req.body;

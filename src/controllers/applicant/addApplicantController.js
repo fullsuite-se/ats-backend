@@ -8,7 +8,7 @@ const app = require("../../app");
 const emailController = require("../email/emailController");
 const positionModel = require("../../models/position/positionModel");
 const applicantModel = require("../../models/applicant/applicantModel");
-
+const stageMapping = require("../../utils/statusMapping"); 
 //DEFAULT 
 const USER_ID = process.env.USER_ID; 
 
@@ -135,6 +135,15 @@ exports.uploadApplicants = [
             flagged.push({ applicant: applicant, possibleDuplicates: possibleDuplicates });
           } else {
             try {
+
+              //map the status to stage
+              const formattedStatus = applicant.status 
+              ? applicant.status.toUpperCase().replace(/ /g, '_') 
+              : 'PRE_SCREENING';
+              
+              const mappedStage = stageMapping.mapStatusToStage(formattedStatus); 
+              applicant.stage = mappedStage; 
+
               const isInserted = await applicantModel.insertApplicant(applicant);
               if (isInserted) {
                 console.log("Applicant inserted successfully:", applicant);
