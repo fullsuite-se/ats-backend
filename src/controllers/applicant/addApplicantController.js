@@ -135,7 +135,6 @@ exports.uploadApplicants = [
             flagged.push({ applicant: applicant, possibleDuplicates: possibleDuplicates });
           } else {
             try {
-
               //map the status to stage
               const mappedStage = stageMapping.mapStatusToStage(applicant.status); 
               applicant.stage = mappedStage; 
