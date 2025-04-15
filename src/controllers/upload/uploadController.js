@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const gdrive = require("../../config/gdrive"); 
 const stream = require("stream");
+const { log } = require('console');
 require("dotenv").config();
 
 const COMPANY_ID = process.env.COMPANY_ID; 
@@ -86,8 +87,18 @@ exports.uploadCVGdrive = async (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
+        //assume that it is coming from FS. So use the company_id of sullsuite.
+        let company_id = COMPANY_ID; 
+
+        if (req.body.company_id) {
+            // if req.company_id is present, it comes from the ATS. 
+            // So use the company_id of the user log in to the ATS.
+           company_id = req.company_id; 
+        }
+
+        
         const { buffer, originalname } = req.file;
-        const { fileId, fileUrl } = await uploadFileToDrive(COMPANY_ID,buffer, originalname);
+        const { fileId, fileUrl } = await uploadFileToDrive(company_id,buffer, originalname);
     
         res.json({ success: true, fileId, fileUrl }); // Return the file ID and sharable link
     } catch (error) {
