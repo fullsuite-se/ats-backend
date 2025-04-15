@@ -1,7 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const { google } = require("googleapis");
-const stream = require("stream");
 require("dotenv").config();
 const gdriveModel = require("../models/userConfiguration/gdriveModel");
 
@@ -42,46 +41,4 @@ const getDriveService = async (company_id) => {
   return { driveService, gdrive_folder_id };
 };
 
-// Upload File to Google Drive
-async function uploadFileToDrive(company_id, fileBuffer, fileName) {
-  const { driveService, gdrive_folder_id } = await getDriveService(company_id);
-
-  const fileMetadata = {
-    name: fileName,
-    parents: [gdrive_folder_id],
-  };
-
-  const bufferStream = new stream.PassThrough();
-  bufferStream.end(fileBuffer);
-
-  const media = {
-    mimeType: "application/octet-stream",
-    body: bufferStream,
-  };
-
-  const response = await driveService.files.create({
-    resource: fileMetadata,
-    media: media,
-    fields: "id",
-  });
-
-  const fileId = response.data.id;
-
-  // Make it publicly accessible
-  await driveService.permissions.create({
-    fileId,
-    requestBody: {
-      role: "reader",
-      type: "anyone",
-    },
-  });
-
-  const fileData = await driveService.files.get({
-    fileId: fileId,
-    fields: "webViewLink",
-  });
-
-  return { fileId, fileUrl: fileData.data.webViewLink };
-}
-
-module.exports = { uploadFileToDrive }
+module.exports = { getDriveService }
