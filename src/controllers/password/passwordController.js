@@ -57,14 +57,13 @@ module.exports.verifyOTP = async (req, res) => {
     const values = [user_email, otp_code];
 
     const [rows] = await pool.execute(sql, values);
-    console.log('resutl', rows);
-    
+
     const record = rows[0];
 
     if (!record) return res.status(400).json({ error: 'Invalid or expired OTP', proceed: false });
     if (new Date() > new Date(record.expires_at)) return res.status(400).json({ error: 'OTP expired', proceed: false });
 
-    res.status(200).json({ message: 'otp verified', proceed: true })
+    res.status(200).json({ message: 'otp verified', proceed: true });
 }
 
 

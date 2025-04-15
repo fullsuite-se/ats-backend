@@ -135,6 +135,8 @@ exports.uploadApplicants = [
             flagged.push({ applicant: applicant, possibleDuplicates: possibleDuplicates });
           } else {
             try {
+              //
+
               const isInserted = await applicantModel.insertApplicant(applicant);
               if (isInserted) {
                 console.log("Applicant inserted successfully:", applicant);
