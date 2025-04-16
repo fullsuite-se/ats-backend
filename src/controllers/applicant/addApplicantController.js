@@ -155,7 +155,7 @@ exports.uploadApplicants = [
             }
           } catch (insertError) {
             // Improved error logging with applicant information
-            console.error(`Error inserting applicant: ${applicant.first_name} ${applicant.last_name} (${applicant.email_1}). Error: ${insertError.message}`);
+            console.error(`Error inserting applicant: ${JSON.stringify(applicant)} ${applicant.first_name} ${applicant.last_name} (${applicant.email_1}). Error: ${insertError.message}`);
             failedInserts.push({ applicant, reason: insertError.message });
           }
         }

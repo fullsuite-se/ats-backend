@@ -58,7 +58,7 @@ const insertApplicant = async (applicant, user_id = null) => {
                 ids.contact_id,
                 applicant.gender || null,
                 applicant.birth_date,
-                applicant.discovered_at,
+                applicant.discovered_at || null,
                 applicant.cv_link || null
             ]
         );
