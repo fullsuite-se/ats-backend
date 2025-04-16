@@ -3,6 +3,20 @@ const Job = require("../../models/jobs/jobModel.js");
 const { now } = require("../../utils/date.js");
 require("dotenv").config();
 
+exports.getShownJobs = async (req, res) => {
+  try {
+    const jobs = await Job.getAllShownJobs();
+
+    res.status(200).json({ success: true, data: jobs });
+  } catch (err) {
+    console.error("Error fetching shown jobs:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 exports.getJobs = async (req, res) => {
   try {
     const jobs = await Job.getAllJobs();
@@ -169,7 +183,7 @@ exports.getJobAssessmentUrl = async (req, res) => {
     const { job_id } = req.body;
 
     console.log(job_id);
-    
+
     const assessmentUrl = await Job.getJobAssessmentUrl(job_id);
 
     console.log(assessmentUrl);

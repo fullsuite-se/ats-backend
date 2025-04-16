@@ -5,6 +5,8 @@ const router = express.Router();
 
 router.get("/", jobController.getJobs);
 
+router.get("/shown", jobController.getShownJobs);
+
 router.get("/open", jobController.getOpenJobs);
 
 router.get("/close", jobController.getCloseJobs);
@@ -17,9 +19,9 @@ router.get("/edit/:jobId", jobController.getJob);
 
 router.get("/open-filter/:industryId", jobController.getFilteredOpenJobs);
 
-router.get("/search/:searchVal", jobController.getSearchedJob)
+router.get("/search/:searchVal", jobController.getSearchedJob);
 
-router.get("/industries/count", jobController.getIndustriesCount)
+router.get("/industries/count", jobController.getIndustriesCount);
 
 router.get("/open/count", jobController.getOpenJobsCount);
 
