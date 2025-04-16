@@ -10,3 +10,13 @@ exports.getPositions = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+exports.getAllPositions = async (req, res) => {
+    //return list of positions
+    try {
+        const results = await positionModel.getAllPosiitons();
+        res.status(200).json({ message: "positions retrieved", positions: results })
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
