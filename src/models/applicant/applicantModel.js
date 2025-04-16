@@ -35,7 +35,7 @@ const insertApplicant = async (applicant, user_id = null) => {
                 ids.tracking_id,
                 ids.applicant_id,
                 ids.progress_id,
-                applicant.date_applied || new Date(),
+                applicant.date_applied,
                 applicant.created_by || CREATED_BY,
                 applicant.updated_by || UPDATED_BY,
                 applicant.test_result || null,
