@@ -116,7 +116,7 @@ exports.uploadApplicants = [
       }
       const applicants = JSON.parse(req.body.applicants);
       console.log("Parsed applicants:", applicants);
-      const positions = await positionModel.getPositions();
+      const positions = await positionModel.getAllPosiitons();
       if (!Array.isArray(applicants)) {
         return res.status(400).json({ message: "Applicants data is not an array" });
       }
