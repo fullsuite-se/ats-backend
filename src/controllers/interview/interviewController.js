@@ -1,7 +1,7 @@
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
 const applicantModel = require("../../models/applicant/applicantModel");
-const app = require("../../app");
+
 // /interview - post
 exports.addInterview = async (req, res) => {
     try {
@@ -134,9 +134,10 @@ exports.addNote = async (req, res) => {
 
 exports.exportDiscussionInterview = async (req, res) => {
     try {
-        const applicant_id = req.params
-        const tracking_id = req.query.tracking_id;
-        console.log(tracking_id);
+        const applicant_id = req.params.applicant_id
+        const tracking_id = req.params.tracking_id;
+        console.log('params', req.params);
+
 
         if (!tracking_id) {
             return res.status(400).json({ message: "Missing tracking_id parameter" });
@@ -198,10 +199,13 @@ exports.exportDiscussionInterview = async (req, res) => {
                     .filter(note => note !== null)  // Remove null values
                     .sort((a, b) => new Date(a.noted_at) - new Date(b.noted_at)) // Sort by noted_at
         }));
+        console.log(formattedResults);
+
 
         const applicant = await applicantModel.getApplicant(applicant_id);
+        console.log(applicant);
 
-        res.status(200).json(formattedResults, applicant);
+        res.status(200).json({ formattedResults, applicant });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: error.message });
