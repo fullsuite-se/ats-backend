@@ -26,6 +26,7 @@ const getAllPosiitons = async () => {
                 const sql = `
                 SELECT * 
                 FROM sl_company_jobs
+                WHERE is_shown = 1
             `;
         
             const [results] = await pool.execute(sql);
