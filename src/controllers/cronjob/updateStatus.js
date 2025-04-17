@@ -97,7 +97,7 @@ const updateStatusCronJob = () => {
     */
 
     //run every 10 seconds
-    cron.schedule("0 0 * * *", async () => {
+    cron.schedule("*/10 * * * * *", async () => {
         console.log("scheduled job is runnning...");
         try {
             const blacklistedApplicants = await getBlackListedApplicants();
