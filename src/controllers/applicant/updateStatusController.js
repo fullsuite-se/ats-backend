@@ -1,9 +1,9 @@
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require('uuid');
-const emailController = require("../../controllers/email/emailController"); 
-const statusMapping =  require("../../utils/statusMapping"); 
+const emailController = require("../../controllers/email/emailController");
+const statusMapping = require("../../utils/statusMapping");
 
-const updateStatus = async (progress_id, user_id, status, change_date = null) => {
+const updateStatus = async (progress_id, user_id, status, change_date = null, blacklisted_type, reason) => {
     converted_status = status.toUpperCase().replace(/ /g, "_");
 
     // get the corresponding stage based on status
@@ -16,15 +16,17 @@ const updateStatus = async (progress_id, user_id, status, change_date = null) =>
         const previousStatus = previousStatusResult.length > 0 ? previousStatusResult[0].status : null;
 
         // Update status of applicant
-        let sql = "UPDATE ats_applicant_progress SET stage = ?, status = ?, updated_at = NOW() WHERE progress_id = ?";
+        let sql = "UPDATE ats_applicant_progress SET stage = ?, status = ?, blacklisted_type = ?, reason = ?, updated_at = NOW() WHERE progress_id = ?";
         let values = [
             stage,
             converted_status,
-            progress_id
+            progress_id,
+            blacklisted_type || null,
+            reason || null
         ];
 
         await pool.execute(sql, values);
-
+s
         // Update tracking info
         sql = `
             UPDATE ats_applicant_trackings 
@@ -70,15 +72,17 @@ const updateStatus = async (progress_id, user_id, status, change_date = null) =>
 
 
 exports.updateApplicantStatus = async (req, res) => {
-    const { progress_id, applicant_id, user_id, status, change_date, previous_status } = req.body;
+    console.log(req.body);
 
-    const isSuccess = await updateStatus(progress_id, user_id, status, change_date);
+    const { progress_id, applicant_id, user_id, status, change_date, previous_status, blacklisted_type, reason } = req.body;
+
+    const isSuccess = await updateStatus(progress_id, user_id, status, change_date, blacklisted_type, reason);
     if (isSuccess) {
         //if send test assessment email if pre-screening to test-sent
         if (status.toUpperCase() == "TEST_SENT") {
             //send email
-            const response = emailController.emailTestAssessment(applicant_id, user_id); 
-            if (response == null){
+            const response = emailController.emailTestAssessment(applicant_id, user_id);
+            if (response == null) {
                 //response is null
                 return res.status(201).json({ message: "Successfully updated status of applicant", test_assessment: "Failed to send test assessment" });
             }
