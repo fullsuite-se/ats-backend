@@ -91,9 +91,6 @@ exports.updateApplicantStatus = async (req, res) => {
     console.log(blacklisted_type);
     console.log(reason);
 
-
-
-
     const isSuccess = await updateStatus(progress_id, user_id, status, change_date, blacklisted_type, reason);
     if (isSuccess) {
         //if send test assessment email if pre-screening to test-sent
