@@ -220,7 +220,7 @@ exports.getApplicant = async (req, res) => {
   try {
     const applicant_id = req.params.applicant_id;
 
-    const results = await applicantModel.getApplicant(applicant_id); 
+    const results = await applicantModel.getApplicant(applicant_id);
 
     if (results.length > 0) {
       return res.status(200).json(results);
@@ -230,5 +230,72 @@ exports.getApplicant = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+
+exports.getApplicantsFilterForExelExport = async (req, res) => {
+  console.log('query params: ', req.query);
+
+  const filters = req.query;
+  const conditions = [];
+  const values = [];
+
+  console.log(filters);
+
+  if (filters.month) {
+    conditions.push("MONTHNAME(t.created_at)= ?");
+    values.push(filters.month);
+  }
+  if (filters.year) {
+    conditions.push("YEAR(t.created_at) = ?");
+    values.push(filters.year);
+  }
+  if (filters.position) {
+    conditions.push("j.title LIKE ?");
+    values.push(`%${filters.position}%`);
+  }
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : [filters.status];
+    const placeholders = statusArray.map(() => "?").join(", ");
+    conditions.push(`p.status IN (${placeholders})`);
+    values.push(...statusArray);
+  }
+
+  // Construct SQL query
+  const baseSql = `
+      SELECT
+        a.*,
+        c.*, 
+        p.stage, 
+        p.status, 
+        j.title, 
+        p.progress_id,
+        t.created_at
+      FROM ats_applicants a
+      LEFT JOIN ats_contact_infos c
+        ON a.applicant_id = c.applicant_id
+      LEFT JOIN ats_applicant_trackings t
+        ON a.applicant_id = t.applicant_id
+      LEFT JOIN ats_applicant_progress p
+        ON t.progress_id = p.progress_id
+      LEFT JOIN sl_company_jobs j
+        ON t.position_id = j.job_id
+    `;
+
+  // Add WHERE clause if filters exist
+  const sql =
+    conditions.length > 0
+      ? `${baseSql} WHERE ${conditions.join(" AND ")} ORDER BY t.created_at DESC`
+      : baseSql;
+
+  try {
+    const [results] = await pool.execute(sql, values);
+    return res.json(results);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
