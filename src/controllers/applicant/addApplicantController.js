@@ -8,9 +8,9 @@ const app = require("../../app");
 const emailController = require("../email/emailController");
 const positionModel = require("../../models/position/positionModel");
 const applicantModel = require("../../models/applicant/applicantModel");
-const stageMapping = require("../../utils/statusMapping"); 
+const stageMapping = require("../../utils/statusMapping");
 //DEFAULT 
-const USER_ID = process.env.USER_ID; 
+const USER_ID = process.env.USER_ID;
 
 
 // Compare applicants for duplicates
@@ -24,35 +24,35 @@ const compare = (applicant, applicantsFromDB) => {
     const applicantFromDBFullname = `${applicantFromDb.first_name} ${applicantFromDb.middle_name ?? ""} ${applicantFromDb.last_name}`.trim();
 
     // Only compare first name if both exist and are equal (not null)
-    if (applicant.first_name && applicantFromDb.first_name && 
-        applicant.first_name === applicantFromDb.first_name) {
+    if (applicant.first_name && applicantFromDb.first_name &&
+      applicant.first_name === applicantFromDb.first_name) {
       similarity.push("Name");
     }
 
     // Only compare emails if both exist and are equal (not null)
-    if (applicantFromDb.email_1 && applicant.email_1 && 
-        applicant.email_1 === applicantFromDb.email_1) {
+    if (applicantFromDb.email_1 && applicant.email_1 &&
+      applicant.email_1 === applicantFromDb.email_1) {
       similarity.push("Email");
     }
 
-    if (applicantFromDb.email_2 && applicant.email_1 && 
-        applicant.email_1 === applicantFromDb.email_2) {
+    if (applicantFromDb.email_2 && applicant.email_1 &&
+      applicant.email_1 === applicantFromDb.email_2) {
       similarity.push("Second Email");
     }
 
-    if (applicantFromDb.email_3 && applicant.email_1 && 
-        applicant.email_1 === applicantFromDb.email_3) {
+    if (applicantFromDb.email_3 && applicant.email_1 &&
+      applicant.email_1 === applicantFromDb.email_3) {
       similarity.push("Third Email");
     }
 
     // Only compare mobile numbers if both exist and are equal (not null)
-    if (applicantFromDb.mobile_number_1 && applicant.mobile_number_1 && 
-        applicant.mobile_number_1 === applicantFromDb.mobile_number_1) {
+    if (applicantFromDb.mobile_number_1 && applicant.mobile_number_1 &&
+      applicant.mobile_number_1 === applicantFromDb.mobile_number_1) {
       similarity.push("Mobile Number");
     }
 
-    if (applicantFromDb.mobile_number_2 && applicant.mobile_number_1 && 
-        applicant.mobile_number_1 === applicantFromDb.mobile_number_2) {
+    if (applicantFromDb.mobile_number_2 && applicant.mobile_number_1 &&
+      applicant.mobile_number_1 === applicantFromDb.mobile_number_2) {
       similarity.push("Second Mobile Number");
     }
 
@@ -86,7 +86,7 @@ exports.addApplicant = async (req, res) => {
 
     const applicant = JSON.parse(req.body.applicant);
     const isFromATS = applicant.created_by && applicant.updated_by;
-    
+
     // Set default values based on source
     applicant.stage = "PRE_SCREENING";
     applicant.status = isFromATS ? "UNPROCESSED" : "TEST_SENT";
@@ -141,8 +141,8 @@ exports.uploadApplicants = [
         } else {
           try {
             //map the status to stage
-            const mappedStage = stageMapping.mapStatusToStage(applicant.status); 
-            applicant.stage = mappedStage; 
+            const mappedStage = stageMapping.mapStatusToStage(applicant.status);
+            applicant.stage = mappedStage;
 
             const isInserted = await applicantModel.insertApplicant(applicant);
             if (isInserted) {
