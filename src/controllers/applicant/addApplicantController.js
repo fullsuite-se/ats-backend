@@ -8,9 +8,9 @@ const app = require("../../app");
 const emailController = require("../email/emailController");
 const positionModel = require("../../models/position/positionModel");
 const applicantModel = require("../../models/applicant/applicantModel");
-const stageMapping = require("../../utils/statusMapping"); 
+const stageMapping = require("../../utils/statusMapping");
 //DEFAULT 
-const USER_ID = process.env.USER_ID; 
+const USER_ID = process.env.USER_ID;
 
 
 // Compare applicants for duplicates
@@ -137,7 +137,7 @@ exports.addApplicant = async (req, res) => {
 
     const applicant = JSON.parse(req.body.applicant);
     const isFromATS = applicant.created_by && applicant.updated_by;
-    
+
     // Set default values based on source
     applicant.stage = "PRE_SCREENING";
     applicant.status = isFromATS ? "UNPROCESSED" : "TEST_SENT";
@@ -192,8 +192,8 @@ exports.uploadApplicants = [
         } else {
           try {
             //map the status to stage
-            const mappedStage = stageMapping.mapStatusToStage(applicant.status); 
-            applicant.stage = mappedStage; 
+            const mappedStage = stageMapping.mapStatusToStage(applicant.status);
+            applicant.stage = mappedStage;
 
             const isInserted = await applicantModel.insertApplicant(applicant);
             if (isInserted) {

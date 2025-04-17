@@ -20,7 +20,18 @@ const addSmtpCredentials = async (user_id, app_pass) =>  {
         console.log(error.message);
     }
 }
+const getSmtpCredentials = async (user_id) => {
+    try {
+        const sql = `SELECT COUNT(*) AS count FROM ats_smtp_credentials WHERE user_id = ?`;
+        const [rows] = await pool.execute(sql, [user_id]);
+        return rows[0].count > 0;
+    } catch (error) {
+        console.log(error.message);
+        return false;
+    }
+}
 
 module.exports = {
-    addSmtpCredentials
+    addSmtpCredentials,
+    getSmtpCredentials
 }

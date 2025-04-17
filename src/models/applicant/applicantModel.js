@@ -23,8 +23,14 @@ const insertApplicant = async (applicant, user_id = null) => {
 
         // Insert progress
         await connection.execute(
-            `INSERT INTO ats_applicant_progress (progress_id, stage, status) VALUES (?, ?, ?)`,
-            [ids.progress_id, applicant.stage, applicant.status]
+            `INSERT INTO ats_applicant_progress (progress_id, stage, status, blacklisted_type, reason) VALUES (?, ?, ?, ?, ?)`,
+            [
+                ids.progress_id,
+                applicant.stage,
+                applicant.status,
+                applicant.blacklisted_type || null,
+                applicant.reason || null,
+            ]
         );
 
         // Insert tracking
