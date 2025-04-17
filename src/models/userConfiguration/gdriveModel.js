@@ -44,4 +44,15 @@ const getGdriveConfig = async (company_id) => {
     return {config_json, gdrive_folder_id}; 
 }
 
-module.exports = { addGdriveConfigurationCredentials, getGdriveConfig }; 
+const getGdriveConfibyid = async (company_id) => {
+    const sql = `
+        SELECT 1 
+        FROM ats_gdrive_config
+        WHERE company_id = ?; 
+    `;
+    const values = [company_id];
+    const [results] = await pool.execute(sql, values);
+    return results.length > 0;
+}
+
+module.exports = { addGdriveConfigurationCredentials, getGdriveConfig , getGdriveConfibyid}; 
