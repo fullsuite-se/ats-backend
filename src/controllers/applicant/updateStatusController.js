@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const emailController = require("../../controllers/email/emailController");
 const statusMapping = require("../../utils/statusMapping");
 
-const updateStatus = async (progress_id, user_id, status, change_date = null) => {
+const updateStatus = async (progress_id, user_id, status, change_date = null, blacklisted_type, reason) => {
     converted_status = status.toUpperCase().replace(/ /g, "_");
 
     // get the corresponding stage based on status
@@ -16,12 +16,28 @@ const updateStatus = async (progress_id, user_id, status, change_date = null) =>
         const previousStatus = previousStatusResult.length > 0 ? previousStatusResult[0].status : null;
 
         // Update status of applicant
-        let sql = "UPDATE ats_applicant_progress SET stage = ?, status = ?, updated_at = NOW() WHERE progress_id = ?";
-        let values = [
-            stage,
-            converted_status,
-            progress_id
-        ];
+        let sql;
+        let values;
+        if (blacklisted_type) {
+            //updating to blacklisted
+            sql = "UPDATE ats_applicant_progress SET stage = ?, status = ?, updated_at = NOW(), blacklisted_type = ?, reason = ? WHERE progress_id = ?";
+            values = [
+                stage,
+                converted_status,
+                blacklisted_type,
+                reason,
+                progress_id
+            ];
+        } else {
+            sql = "UPDATE ats_applicant_progress SET stage = ?, status = ?, updated_at = NOW() WHERE progress_id = ?";
+            values = [
+                stage,
+                converted_status,
+                progress_id
+            ];
+        }
+
+
 
         await pool.execute(sql, values);
 
