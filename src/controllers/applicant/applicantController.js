@@ -252,8 +252,10 @@ exports.getApplicantsFilterForExelExport = async (req, res) => {
     values.push(filters.year);
   }
   if (filters.position) {
-    conditions.push("j.title LIKE ?");
-    values.push(`%${filters.position}%`);
+    if (filters.position != "All") {
+      conditions.push("j.title LIKE ?");
+      values.push(`%${filters.position}%`);
+    }
   }
   if (filters.status) {
     const statusArray = Array.isArray(filters.status)
