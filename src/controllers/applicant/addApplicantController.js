@@ -17,48 +17,99 @@ const USER_ID = process.env.USER_ID;
 const compare = (applicant, applicantsFromDB) => {
   const possibleDuplicates = [];
 
+  //console.log(applicant.mobile_number_2);
+  
+
   applicantsFromDB.forEach(applicantFromDb => {
     const similarity = [];
+
+    //console.log(applicant.applicant_id + ": "  +applicantFromDb.applicant_id);
+    
 
     const applicantFullname = `${applicant.first_name} ${applicant.middle_name ?? ""} ${applicant.last_name}`.trim();
     const applicantFromDBFullname = `${applicantFromDb.first_name} ${applicantFromDb.middle_name ?? ""} ${applicantFromDb.last_name}`.trim();
 
-    // Only compare first name if both exist and are equal (not null)
-    if (applicant.first_name && applicantFromDb.first_name && 
-        applicant.first_name === applicantFromDb.first_name) {
-      similarity.push("Name");
-    }
+    if (applicant.applicant_id != applicantFromDb.applicant_id) {
+      // Only compare first name if both exist and are equal (not null)
+      if (applicantFullname && applicantFromDBFullname && 
+          applicantFullname.toLowerCase() === applicantFromDBFullname.toLowerCase()) {
+        similarity.push("Name");
+      }
 
-    // Only compare emails if both exist and are equal (not null)
-    if (applicantFromDb.email_1 && applicant.email_1 && 
-        applicant.email_1 === applicantFromDb.email_1) {
-      similarity.push("Email");
-    }
+      // Only compare emails if both exist and are equal (not null)
+      if (applicantFromDb.email_1 && applicant.email_1 && 
+          applicant.email_1 === applicantFromDb.email_1) {
+        similarity.push("Email");
+      }
 
-    if (applicantFromDb.email_2 && applicant.email_1 && 
-        applicant.email_1 === applicantFromDb.email_2) {
-      similarity.push("Second Email");
-    }
+      if (applicantFromDb.email_2 && applicant.email_1 && 
+          applicant.email_1 === applicantFromDb.email_2) {
+        similarity.push("Second Email");
+      }
 
-    if (applicantFromDb.email_3 && applicant.email_1 && 
-        applicant.email_1 === applicantFromDb.email_3) {
-      similarity.push("Third Email");
-    }
+      if (applicantFromDb.email_3 && applicant.email_1 && 
+          applicant.email_1 === applicantFromDb.email_3) {
+        similarity.push("Third Email");
+      }
 
-    // Only compare mobile numbers if both exist and are equal (not null)
-    if (applicantFromDb.mobile_number_1 && applicant.mobile_number_1 && 
-        applicant.mobile_number_1 === applicantFromDb.mobile_number_1) {
-      similarity.push("Mobile Number");
-    }
+      //Email 2
+      if (applicantFromDb.email_1 && applicant.email_2 &&
+        applicant.email_2 === applicantFromDb.email_1) {
+        similarity.push("Email"); 
+      }
 
-    if (applicantFromDb.mobile_number_2 && applicant.mobile_number_1 && 
-        applicant.mobile_number_1 === applicantFromDb.mobile_number_2) {
-      similarity.push("Second Mobile Number");
-    }
+      if (applicantFromDb.email_2 && applicant.email_2 &&
+        applicant.email_2 === applicantFromDb.email_2) {
+        similarity.push("Second Email"); 
+      }
 
-    // Only add to possible duplicates if there are similarities found
-    if (similarity.length > 0) {
-      possibleDuplicates.push({ applicantFromDb: applicantFromDb, similarity: similarity });
+      if (applicantFromDb.email_3 && applicant.email_2 &&
+        applicant.email_2 === applicantFromDb.email_3) {
+        similarity.push("Third Email"); 
+      }
+
+      //Email 3
+      if (applicantFromDb.email_1 && applicant.email_3 &&
+        applicant.email_3 === applicantFromDb.email_1) {
+        similarity.push("Email"); 
+      }
+
+      if (applicantFromDb.email_2 && applicant.email_3 &&
+        applicant.email_3 === applicantFromDb.email_2) {
+        similarity.push("Second Email"); 
+      }
+
+      if (applicantFromDb.email_3 && applicant.email_3 &&
+        applicant.email_3 === applicantFromDb.email_3) {
+        similarity.push("Third Email"); 
+      }
+
+      // Only compare mobile numbers if both exist and are equal (not null)
+      if (applicantFromDb.mobile_number_1 && applicant.mobile_number_1 && 
+          applicant.mobile_number_1 === applicantFromDb.mobile_number_1) {
+        similarity.push("Mobile Number");
+      }
+
+      if (applicantFromDb.mobile_number_2 && applicant.mobile_number_1 && 
+          applicant.mobile_number_1 === applicantFromDb.mobile_number_2) {
+        similarity.push("Second Mobile Number");
+      }
+
+      //Second Number
+      if (applicantFromDb.mobile_number_1 && applicant.mobile_number_2 && 
+          applicant.mobile_number_2 === applicantFromDb.mobile_number_1) {
+        similarity.push("Mobile Number");
+      }
+
+      if (applicantFromDb.mobile_number_2 && applicant.mobile_number_2 && 
+          applicant.mobile_number_2 === applicantFromDb.mobile_number_2) {
+        similarity.push("Second Mobile Number");
+      }
+
+      // Only add to possible duplicates if there are similarities found
+      if (similarity.length > 0) {
+        possibleDuplicates.push({ applicantFromDb: applicantFromDb, similarity: similarity });
+      }
     }
   });
 
