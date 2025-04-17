@@ -267,41 +267,25 @@ exports.getApplicantsFilterForExelExport = async (req, res) => {
   // Construct SQL query
   const baseSql = `
       SELECT
-      t.created_at as date_applied,
-      a.first_name,
-      a.middle_name,
-      a.last_name,
-      c.email_1, 
-      c.email_2, 
-      c.email_3,
-      c.mobile_number_1,
-      c.mobile_number_2,
-      a.cv_link, 
-      a.discovered_at,
-      t.applied_source as source,
-      j.title as position_applied,
-      t.test_result,
-      p.status,
-      a.created_at as date_created, 
-      t.referrer_name,
-      
-
-
-
-      
-
-
-      
-
-
-
-        a.*,
-        c.*, 
-        p.stage, 
-        p.status, 
-        j.title, 
-        p.progress_id,
-        t.created_at
+        t.created_at as date_applied,
+        a.first_name,
+        a.middle_name,
+        a.last_name,
+        c.email_1, 
+        c.email_2, 
+        c.email_3,
+        c.mobile_number_1,
+        c.mobile_number_2,
+        a.cv_link, 
+        a.discovered_at,
+        t.applied_source as source,
+        j.title as position_applied,
+        t.test_result,
+        p.status,
+        a.date_created, 
+        t.referrer_name,
+        p.blacklisted_type,
+        p.reason
       FROM ats_applicants a
       LEFT JOIN ats_contact_infos c
         ON a.applicant_id = c.applicant_id
