@@ -88,7 +88,7 @@ exports.addNote = async (req, res) => {
 
         await pool.execute(sql, values);
 
-        await slack.messageBotInterview(interview.interviewer_id, interview.applicant_id);
+        await slack.messageBotNote(interview.note_body, interview.interviewer_id, interview.applicant_id);
 
         res.status(201).json({ message: "interview note added" });
     } catch (error) {

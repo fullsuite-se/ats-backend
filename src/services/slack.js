@@ -37,7 +37,7 @@ module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
 module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
     const applicant = await applicantModel.getApplicant(applicant_id);
-    const message = `New note was added for ${applicant.first_name} ${applicant.last_name}.` + message;
+    const message = `New note was added for ${applicant.first_name} ${applicant.last_name}.` + note;
 
     const text = `${user.first_name} ${user.last_name}: ${message}`;
 
