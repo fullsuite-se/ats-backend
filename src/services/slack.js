@@ -10,10 +10,12 @@ const app = new Slack.App({
 
 
 const sendMessageToSlack = async (message, user_name = null) => {
+    const text = `${user_name}: ${message}`
+
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
         channel: process.env.SLACK_CHANNEL,
-        text: message,
+        text: text,
         // blocks: block,
     });
 }
