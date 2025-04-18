@@ -19,7 +19,7 @@ exports.addInterview = async (req, res) => {
         let values = [interview_id, interview.tracking_id, interview.interviewer_id, interview.date_of_interview];
         await pool.execute(sql, values);
 
-        await slack.messageBot("new interview added", interviewer_id);
+        await slack.messageBot("New Interview is added",);
 
         res.status(201).json({ message: "interview added" });
     } catch (error) {
