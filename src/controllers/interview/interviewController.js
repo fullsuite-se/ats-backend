@@ -19,7 +19,7 @@ exports.addInterview = async (req, res) => {
         let values = [interview_id, interview.tracking_id, interview.interviewer_id, interview.date_of_interview];
         await pool.execute(sql, values);
 
-        await slack.messageBot("New Interview is added",);
+        await slack.messageBotInterview(interview.interviewer_id, interview.applicant_id);
 
         res.status(201).json({ message: "interview added" });
     } catch (error) {
@@ -87,6 +87,9 @@ exports.addNote = async (req, res) => {
         const values = [note_id, interview.interview_id, interview.note_type, interview.note_body, interview.noted_by];
 
         await pool.execute(sql, values);
+
+        await slack.messageBotInterview(interview.interviewer_id, interview.applicant_id);
+
         res.status(201).json({ message: "interview note added" });
     } catch (error) {
         console.error(error);

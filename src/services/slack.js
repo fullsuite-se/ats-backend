@@ -7,7 +7,7 @@ const app = new App({
     token: process.env.SLACK_BOT_TOKEN,
 })
 
-module.exports.messageBot = async (message, user_id) => {
+module.exports.messageBot = async (message, interviewer_id) => {
     const text = `${message}`
 
     await app.client.chat.postMessage({
@@ -19,9 +19,9 @@ module.exports.messageBot = async (message, user_id) => {
 };
 
 
-module.exports.messageBotInterview = async (user_id, applicant_id) => {
-    const user = userModel.getUserInfo(user_id);
-    const applicant = applicantModel.getApplicant(applicant_id);
+module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
+    const user = await userModel.getUserInfo(interviewer_id);
+    const applicant = await applicantModel.getApplicant(applicant_id);
     const message = `New interview was created for ${applicant.first_name} ${applicant.last_name}`;
 
     const text = `${user.first_name} ${user.last_name}: ${message}`;
@@ -34,9 +34,9 @@ module.exports.messageBotInterview = async (user_id, applicant_id) => {
     });
 };
 
-module.exports.messageBotNote = async (note, user_id, applicant_id) => {
-    const user = userModel.getUserInfo(user_id);
-    const applicant = applicantModel.getApplicant(applicant_id);
+module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
+    const user = await userModel.getUserInfo(interviewer_id);
+    const applicant = await applicantModel.getApplicant(applicant_id);
     const message = `New note was added for ${applicant.first_name} ${applicant.last_name}.` + message;
 
     const text = `${user.first_name} ${user.last_name}: ${message}`;
