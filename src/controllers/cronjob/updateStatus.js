@@ -28,7 +28,7 @@ const updateStatus = async (applicant) => {
             SET stage=?, status=?, blacklisted_type=?, reason=?
             WHERE progress_id = ?
         `;
-        const values = ['PRE_SCREENING', 'NONE', null, null, applicant.progress_id];
+        const values = ['PRE_SCREENING', 'UNPROCESSED', null, null, applicant.progress_id];
         await pool.execute(sql, values);
 
         return true
@@ -109,10 +109,10 @@ const updateStatusCronJob = () => {
 
                     //sent to notification
                     const data = { notification_type: "BLACKLISTED LIFTED", applicant_id: applicant.applicant_id }
-                    if (addNotification(data)){
+                    if (addNotification(data)) {
                         console.log("blacklisted status lifted");
                     }
-                    
+
                 }
             });
         } catch (error) {
@@ -120,7 +120,7 @@ const updateStatusCronJob = () => {
         }
     });
 
-    
+
 }
 
 

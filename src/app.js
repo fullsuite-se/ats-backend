@@ -16,8 +16,13 @@ app.use(express.json());
 
 // Disable CORS protection from this react project origin
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
+// disable cors protection from FS website.
+const CLIENT_ORIGIN_FS = process.env.CLIENT_ORIGIN_FS;
 app.use(
-  cors({ origin: [CLIENT_ORIGIN, "http://localhost:5173"], credentials: true })
+  cors({
+    origin: [CLIENT_ORIGIN, CLIENT_ORIGIN_FS, "http://localhost:5173", "http://192.168.88.244"],
+    credentials: true,
+  })
 );
 
 // Cron Jobs
@@ -32,14 +37,16 @@ const applicantRoutes = require("./routes/applicant/applicantRoutes");
 const addApplicantRoutes = require("./routes/applicant/addApplicantRoutes");
 const editApplicantRoutes = require("./routes/applicant/editApplicantRoutes");
 const updateStatusRoutes = require("./routes/applicant/updateStatusRoutes");
+const checkApplicantRoutes = require("./routes/applicant/checkApplicantRoutes"); 
+const pendingApplicantRoutes = require("./routes/applicant/pendingApplicantRoutes");
 
 // interview
 const interviewRoutes = require("./routes/interview/interviewRoutes");
 
-//company
+// company
 const positionRoutes = require("./routes/company/positionRoutes");
 
-//analytic
+// analytic
 const metricRoutes = require("./routes/analytic/metricsRoutes");
 const graphsRoutes = require("./routes/analytic/graphsRoutes");
 
@@ -49,21 +56,46 @@ const applicantCounterRoutes = require("./routes/counter/applicantCounterRoute")
 // notification
 const notificationRoutes = require("./routes/notification/notificationRoutes");
 
-//email
+// email
 const emailRoutes = require("./routes/email/emailRoutes");
 
 // user
 const userRoutes = require("./routes/user/userRoutes");
 
-//Misc (for fetching config from db)
+// misc (for fetching config from db)
 const statusRoutes = require("./routes/status/statusRoutes");
 
 // upload
 const uploadRoutes = require("./routes/upload/uploadRoutes");
 
+// industries
+const industryRoutes = require("./routes/jobs/industryRoutes");
+
+// jobs
+const jobRoutes = require("./routes/jobs/jobRoutes");
+
+// setups
+const setupRoutes = require("./routes/jobs/setupRoutes");
+
+// configuration
+const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
+
+// status history
+const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
+
+//dashboard
+const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
+
+//password - for password reset
+const passwordRoutes = require("./routes/password/passwordRoutes"); 
+
 // Routes
+app.use("/applicants/pending", pendingApplicantRoutes); 
+app.use('/analytics/dashboard', dashboardRoutes);
+app.use("/applicant/status-history", statusHistoryRoutes);
 app.use("/applicants", applicantRoutes);
 app.use("/applicants/add", addApplicantRoutes);
+app.use("/applicants/check", checkApplicantRoutes); 
 app.use("/applicant/edit", editApplicantRoutes);
 app.use("/applicant/update/status", updateStatusRoutes);
 app.use("/counter", applicantCounterRoutes);
@@ -78,6 +110,11 @@ app.use("/company", positionRoutes);
 app.use("/user", userRoutes);
 app.use("/status", statusRoutes);
 app.use("/upload", uploadRoutes);
+app.use("/industries", industryRoutes);
+app.use("/jobs", jobRoutes);
+app.use("/setups", setupRoutes);
+app.use("/user-configuration", userConfigurationRoutes);
+app.use("/password", passwordRoutes);
 
 const verifyToken = require("./middlewares/verifyToken");
 

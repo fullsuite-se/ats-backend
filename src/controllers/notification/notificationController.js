@@ -1,4 +1,5 @@
 const pool = require("../../config/db");
+const { v4: uuidv4 } = require("uuid");
 
 const generalNotification = async () => {
     const sql = `
@@ -8,6 +9,8 @@ const generalNotification = async () => {
             a.middle_name,
             a.last_name,
             t.created_at AS date_applied,
+            t.updated_at AS date_update, 
+            t.updated_by, 
             j.title
         FROM ats_notifications n
         LEFT JOIN ats_applicants a ON n.applicant_id = a.applicant_id
@@ -48,6 +51,26 @@ const atsHealthCheckNotification = async () => {
         return [];
     }
 };
+
+const addNotification = async (applicant_id, notification_type) => {
+    try {
+        const notification_id = uuidv4();
+
+        const sql = `
+        INSERT INTO ats_notifications (notification_id, applicant_id, notification_type)
+        VALUES (?, ?, ?)
+    `;
+
+        const values = [notification_id, applicant_id, notification_type];
+        await pool.execute(sql, values);
+        return true;
+    } catch (error) {
+
+        console.log(error.message);
+        return false;
+
+    }
+}
 
 exports.getNotification = async (req, res) => {
     try {
