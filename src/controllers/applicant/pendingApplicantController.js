@@ -4,6 +4,8 @@ const applicantModel = require("../../models/applicant/applicantModel");
 const { errorMonitor } = require("nodemailer/lib/xoauth2");
 const positionModel = require("../../models/position/positionModel");
 const emailController = require("../email/emailController");
+const addApplicantController = require("../applicant/addApplicantController");
+
 const getPendingApplicant = async (pending_applicant_id) => {
     try {
         const sql = `
@@ -125,6 +127,10 @@ exports.confirmPendingApplicant = async (req, res) => {
 
         await emailController.emailApplicantGuest(applicant, email_subject, email_body);
 
+        //passing it to the add applicant controller
+        req.body.applicant = JSON.stringify(applicant);
+        addApplicantController.addApplicant(req, res);
+
         //the problem is that there is no stage and status. ie. its not
         //using the add controller which adds status and stage. so we'll manually do it
         // applicant.stage = "PRE_SCREENING";
@@ -134,7 +140,7 @@ exports.confirmPendingApplicant = async (req, res) => {
         //const { applicant_id } = await applicantModel.insertApplicant(applicant);
 
 
-        return res.status(201).json({ message: "successfully inserted" });
+        //return res.status(201).json({ message: "successfully inserted" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
