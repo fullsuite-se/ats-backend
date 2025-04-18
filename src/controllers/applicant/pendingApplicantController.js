@@ -122,23 +122,14 @@ exports.confirmPendingApplicant = async (req, res) => {
             Fullsuite Recruitment Team</p>
         `;
 
-        //change the status to 0 to reflect that it is not pending. 
-        await changePendingStatus(pending_applicant_id, 0);
-
         await emailController.emailApplicantGuest(applicant, email_subject, email_body);
 
         //passing it to the add applicant controller
         req.body.applicant = JSON.stringify(applicant);
         addApplicantController.addApplicant(req, res);
 
-        //the problem is that there is no stage and status. ie. its not
-        //using the add controller which adds status and stage. so we'll manually do it
-        // applicant.stage = "PRE_SCREENING";
-        // applicant.status = "TEST_SENT";
-
-        //pass it to the insert function 
-        //const { applicant_id } = await applicantModel.insertApplicant(applicant);
-
+        //change the status to 0 to reflect that it is not pending. 
+        await changePendingStatus(pending_applicant_id, 0);
 
         //return res.status(201).json({ message: "successfully inserted" });
     } catch (error) {
