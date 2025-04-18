@@ -6,7 +6,7 @@ const app = new App({
     token: process.env.SLACK_BOT_TOKEN,
 })
 
-const messageBot = async (message, user_id) => {
+module.exports.messageBot = async (message, user_id) => {
     const text = `${message}`
 
     await app.client.chat.postMessage({
@@ -16,5 +16,3 @@ const messageBot = async (message, user_id) => {
         // blocks: block,
     });
 };
-
-module.exports = messageBot; 
