@@ -77,6 +77,8 @@ exports.createUserAccount = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(data.user_password, 10);
 
+        console.log(req.body);
+
         //TODO: user accounts
         await pool.execute(
             `
@@ -92,11 +94,12 @@ exports.createUserAccount = async (req, res) => {
         );
 
         //TODO: hris_user_access_permision
-        data.service_feature_ids.map(async (service_feature_id) => {
+        const service_feature_ids = JSON.parse(data.service_feature_ids.replace(/'/g, '"'));
+        service_feature_ids.map(async (service_feature_id) => {
             await pool.execute(
                 `
-                INSERT INTO hris_user_access_permissions (user_access_permision_id, user_id, service_feature_id) VALUES (?, ?, ?)
-                `, [user_access_permision_id, user_id, service_feature_id]
+                INSERT INTO hris_user_access_permissions (user_access_permission_id, user_id, service_feature_id) VALUES (?, ?, ?)
+                `, [uuidv4(), user_id, service_feature_id]
             );
         });
 
