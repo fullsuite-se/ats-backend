@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/kriyahr/ats-backend#readme",
   "dependencies": {
+    "@slack/bolt": "^4.2.1",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.0",
     "cors": "^2.8.5",
