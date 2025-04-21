@@ -68,46 +68,50 @@ exports.getAllUserAccounts = async (req, res) => {
 };
 
 exports.createUserAccount = async (req, res) => {
-    const data = req.body;
-    const user_id = uuidv4();
-    const user_info_id = uuidv4();
-    const user_access_permision_id = uuidv4();
-    const user_designation_id = uuidv4();
+    try {
+        const data = req.body;
+        const user_id = uuidv4();
+        const user_info_id = uuidv4();
+        const user_access_permision_id = uuidv4();
+        const user_designation_id = uuidv4();
 
-    const hashedPassword = await bcrypt.hash(data.user_password, 10);
+        const hashedPassword = await bcrypt.hash(data.user_password, 10);
 
-    //TODO: user accounts
-    await pool.execute(
-        `
-        INSERT INTO hris_user_accounts (user_id, user_email, user_password) VALUES (?, ?, ?)
-        `, [user_id, data.user_email, hashedPassword]
-    );
-
-    //TODO: user infos
-    await pool.execute(
-        `
-        INSERT INTO hris_user_infos (user_info_id, user_id, first_name, last_name, personal_email) VALUES (?, ?, ?, ?, ?)
-        `, [user_info_id, user_id, data.first_name, data.last_name, data.user_email]
-    );
-
-    //TODO: hris_user_access_permision
-    data.service_feature_ids.map(async (service_feature_id) => {
+        //TODO: user accounts
         await pool.execute(
             `
-            INSERT INTO hris_user_access_permissions (user_access_permision_id, user_id, service_feature_id) VALUES (?, ?, ?)
-            `, [user_access_permision_id, user_id, service_feature_id]
+            INSERT INTO hris_user_accounts (user_id, user_email, user_password) VALUES (?, ?, ?)
+            `, [user_id, data.user_email, hashedPassword]
         );
-    });
 
-    //TODO: user_designations
-    await pool.execute(
-        `
-        INSERT INTO hris_user_designations (user_designation_id, user_id, company_id, job_title_id) VALUES  (?, ?, ?, ?)
-        `, [user_designation_id, user_id, data.company_id, data.job_title_id]
-    );
+        //TODO: user infos
+        await pool.execute(
+            `
+            INSERT INTO hris_user_infos (user_info_id, user_id, first_name, last_name, personal_email) VALUES (?, ?, ?, ?, ?)
+            `, [user_info_id, user_id, data.first_name, data.last_name, data.user_email]
+        );
 
-    return res.status(201).json("user inserted")
+        //TODO: hris_user_access_permision
+        data.service_feature_ids.map(async (service_feature_id) => {
+            await pool.execute(
+                `
+                INSERT INTO hris_user_access_permissions (user_access_permision_id, user_id, service_feature_id) VALUES (?, ?, ?)
+                `, [user_access_permision_id, user_id, service_feature_id]
+            );
+        });
+
+        //TODO: user_designations
+        await pool.execute(
+            `
+            INSERT INTO hris_user_designations (user_designation_id, user_id, company_id, job_title_id) VALUES  (?, ?, ?, ?)
+            `, [user_designation_id, user_id, data.company_id, data.job_title_id]
+        );
+
+        return res.status(201).json({ message: "user inserted" });
 
 
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
 
 }
