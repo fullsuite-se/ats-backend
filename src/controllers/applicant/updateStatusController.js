@@ -3,8 +3,15 @@ const { v4: uuidv4 } = require('uuid');
 const emailController = require("../../controllers/email/emailController");
 const statusMapping = require("../../utils/statusMapping");
 
+// Helper to convert ISO date string to MySQL DATETIME format
+function toMySQLDateTime(dateString) {
+    if (!dateString || dateString === "N/A") return null;
+    // Handles both "YYYY-MM-DDTHH:mm:ss" and "YYYY-MM-DD"
+    return dateString.replace('T', ' ').slice(0, 19);
+}
+
 const updateStatus = async (progress_id, user_id, status, change_date = null, blacklisted_type, reason) => {
-    converted_status = status.toUpperCase().replace(/ /g, "_");
+    const converted_status = status.toUpperCase().replace(/ /g, "_");
 
     // get the corresponding stage based on status
     let stage = statusMapping.mapStatusToStage(converted_status);
@@ -19,7 +26,7 @@ const updateStatus = async (progress_id, user_id, status, change_date = null, bl
         let sql;
         let values;
         if (blacklisted_type) {
-            //updating to blacklisted
+            // updating to blacklisted
             sql = "UPDATE ats_applicant_progress SET stage = ?, status = ?, updated_at = NOW(), blacklisted_type = ?, reason = ? WHERE progress_id = ?";
             values = [
                 stage,
@@ -37,8 +44,6 @@ const updateStatus = async (progress_id, user_id, status, change_date = null, bl
             ];
         }
 
-
-
         await pool.execute(sql, values);
 
         // Update tracking info
@@ -47,7 +52,6 @@ const updateStatus = async (progress_id, user_id, status, change_date = null, bl
             SET updated_by = ?, updated_at = NOW()
             WHERE progress_id = ?
         `;
-
         values = [user_id, progress_id];
         await pool.execute(sql, values);
 
@@ -58,7 +62,7 @@ const updateStatus = async (progress_id, user_id, status, change_date = null, bl
             const insertHistorySQL = `
                 INSERT INTO ats_applicant_status_history 
                 (history_id, progress_id, previous_status, new_status, changed_by, changed_at) 
-                VALUES (?, ?, ?, ?, ?, ${change_date ? '?' : 'NOW()'})
+                VALUES (?, ?, ?, ?, ?, ${change_date && change_date !== "N/A" ? '?' : 'NOW()'})
             `;
 
             let historyValues = [
@@ -69,9 +73,9 @@ const updateStatus = async (progress_id, user_id, status, change_date = null, bl
                 user_id
             ];
 
-            // Add the custom date if provided
+            // Add the custom date if provided, convert to MySQL format
             if (change_date && change_date !== "N/A") {
-                historyValues.push(change_date);
+                historyValues.push(toMySQLDateTime(change_date));
             }
 
             await pool.execute(insertHistorySQL, historyValues);
@@ -84,7 +88,6 @@ const updateStatus = async (progress_id, user_id, status, change_date = null, bl
     }
 };
 
-
 exports.updateApplicantStatus = async (req, res) => {
     const { progress_id, applicant_id, user_id, status, change_date, previous_status, blacklisted_type, reason } = req.body;
     console.log(req.body);
@@ -93,12 +96,12 @@ exports.updateApplicantStatus = async (req, res) => {
 
     const isSuccess = await updateStatus(progress_id, user_id, status, change_date, blacklisted_type, reason);
     if (isSuccess) {
-        //if send test assessment email if pre-screening to test-sent
-        if (status.toUpperCase() == "TEST_SENT") {
-            //send email
-            const response = emailController.emailTestAssessment(applicant_id, user_id);
+        // if send test assessment email if pre-screening to test-sent
+        if (status.toUpperCase() === "TEST_SENT") {
+            // send email
+            const response = await emailController.emailTestAssessment(applicant_id, user_id);
             if (response == null) {
-                //response is null
+                // response is null
                 return res.status(201).json({ message: "Successfully updated status of applicant", test_assessment: "Failed to send test assessment" });
             }
         }

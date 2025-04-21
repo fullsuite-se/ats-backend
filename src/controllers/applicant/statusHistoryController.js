@@ -11,7 +11,7 @@ exports.getApplicantStatusHistory = async (req, res) => {
             FROM ats_applicant_status_history h
             LEFT JOIN hris_user_infos u ON h.changed_by = u.user_id
             WHERE h.progress_id = ?
-            ORDER BY h.changed_at DESC
+            ORDER BY h.changed_at ASC
         `;
         
         const [results] = await pool.execute(sql, [progressId]);
