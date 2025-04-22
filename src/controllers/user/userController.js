@@ -86,6 +86,32 @@ exports.createUserAccount = async (req, res) => {
             `, [user_id, data.user_email, hashedPassword]
         );
 
+        //TODO: user_designations
+        await pool.execute(
+            `
+            INSERT INTO hris_user_designations (user_designation_id, user_id, company_id, job_title_id) VALUES  (?, ?, ?, ?)
+            `, [user_designation_id, user_id, data.company_id, data.job_title_id]
+        );
+
+
+        //TODO: hris_user_access_permision
+        let service_feature_ids;
+        try {
+            service_feature_ids = JSON.parse(data.service_feature_ids);
+            if (!Array.isArray(service_feature_ids)) {
+                return res.status(400).json({ message: "service_feature_ids must be an array." });
+            }
+        } catch (err) {
+            return res.status(400).json({ message: "Invalid JSON format in service_feature_ids." });
+        }
+
+        await Promise.all(service_feature_ids.map(service_feature_id => {
+            return pool.execute(
+                `INSERT INTO hris_user_access_permissions (user_access_permission_id, user_id, service_feature_id) VALUES (?, ?, ?)`,
+                [uuidv4(), user_id, service_feature_id]
+            );
+        }));
+
         //TODO: user infos
         await pool.execute(
             `
@@ -93,22 +119,6 @@ exports.createUserAccount = async (req, res) => {
             `, [user_info_id, user_id, data.first_name, data.last_name, data.user_email]
         );
 
-        //TODO: hris_user_access_permision
-        const service_feature_ids = JSON.parse(data.service_feature_ids.replace(/'/g, '"'));
-        service_feature_ids.map(async (service_feature_id) => {
-            await pool.execute(
-                `
-                INSERT INTO hris_user_access_permissions (user_access_permission_id, user_id, service_feature_id) VALUES (?, ?, ?)
-                `, [uuidv4(), user_id, service_feature_id]
-            );
-        });
-
-        //TODO: user_designations
-        await pool.execute(
-            `
-            INSERT INTO hris_user_designations (user_designation_id, user_id, company_id, job_title_id) VALUES  (?, ?, ?, ?)
-            `, [user_designation_id, user_id, data.company_id, data.job_title_id]
-        );
 
         return res.status(201).json({ message: "user inserted" });
 
