@@ -128,3 +128,17 @@ exports.createUserAccount = async (req, res) => {
     }
 
 }
+
+exports.service_features = async (req, res) => {
+    const [results] = await pool.execute(
+        `SELECT *  FROM service_features`
+    );
+
+    return res.status(200).json({ message: "successfully retrieved", service_features: results })
+}
+
+exports.job_titles = async (req, res) => {
+    const [results] = await pool.execute(`SELECT * FROM company_job_titles`);
+
+    return res.status(200).json({ message: "successfully retrieved", job_titles: results })
+}
