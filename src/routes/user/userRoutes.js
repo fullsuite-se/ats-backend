@@ -10,5 +10,10 @@ router.get('/getuserinfo', verifyToken, userController.getUserInfo);
 // router.get('/user-accounts', verifyToken, userController.getAllUserAccounts);
 router.get('/user-accounts', userController.getAllUserAccounts);
 
+router.post('/create-user', userController.createUserAccount);
+
+router.get('/job-titles', userController.job_titles);
+
+router.get('/service-features', userController.service_features);
 
 module.exports = router;
