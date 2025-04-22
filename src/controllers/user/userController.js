@@ -115,8 +115,18 @@ exports.createUserAccount = async (req, res) => {
         //TODO: user infos
         await pool.execute(
             `
-            INSERT INTO hris_user_infos (user_info_id, user_id, first_name, last_name, personal_email) VALUES (?, ?, ?, ?, ?)
-            `, [user_info_id, user_id, data.first_name, data.last_name, data.user_email]
+            INSERT INTO hris_user_infos (user_info_id, user_id, first_name, middle_name, last_name, extension_name, sex, user_pic, personal_email, contact_number, birthdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+            user_info_id,
+            user_id, data.first_name,
+            data.middle_name || null,
+            data.last_name,
+            data.extension_name || null,
+            data.sex || null,
+            data.user_pic || null,
+            data.personal_email,
+            data.contact_number || null,
+            data.birthdate || null]
         );
 
 
