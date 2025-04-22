@@ -36,12 +36,12 @@ const atsHealthCheckNotification = async () => {
             t.updated_at,
             j.title, 
             p.stage, 
-            p.status 
+            p.status
         FROM ats_applicants a
         JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
         LEFT JOIN sl_company_jobs j ON j.job_id = t.position_id
         LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-        WHERE t.updated_at < NOW() - INTERVAL 3 DAY
+        WHERE t.updated_at < NOW() - INTERVAL 3 DAY AND p.status NOT IN ('JOB_OFFER_REJECTED', 'JOB_OFFER_ACCEPTED', 'FOR_FUTURE_POOLING', 'WITHDREW_APPLICATION', 'BLACKLISTED', 'GHOSTED', 'NOT_FIT')
     `;
     try {
         const [rows] = await pool.query(sql);
