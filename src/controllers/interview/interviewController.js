@@ -2,7 +2,6 @@ const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
 const applicantModel = require("../../models/applicant/applicantModel");
 const interviewModel = require("../../models/interview/interviewModel");
-// const messageBot = require("../../services/slack");
 const slack = require("../../services/slack");
 
 // /interview - post
