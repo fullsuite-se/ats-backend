@@ -26,15 +26,37 @@ module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
     let applicant = await applicantModel.getApplicant(applicant_id);
     applicant = applicant[0];
-    const message = `New interview was created for ${applicant.first_name} ${applicant.last_name}`;
 
-    const text = `${user.first_name} ${user.last_name}: ${message}`;
+    // Get the Slack user ID using email
+    const slackUser = await getSlackUserByEmail(user.user_email);
+    const userMention = slackUser ? `<@${slackUser.id}>` : `${user.first_name} ${user.last_name}`;
+
+    const subject = "New Interview Created";
+    const messageBody = `New interview was created for ${applicant.first_name} ${applicant.last_name}`;
+
+    const text = `${userMention}: ${subject}\n${messageBody}`;
 
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
         channel: process.env.SLACK_CHANNEL,
         text: text,
-        // blocks: block,
+        // Using blocks for more structured message with mention
+        blocks: [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": `${userMention}: *${subject}*`
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": messageBody
+                }
+            }
+        ],
     });
 };
 
@@ -42,17 +64,36 @@ module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
     let applicant = await applicantModel.getApplicant(applicant_id);
     applicant = applicant[0];
-    const message = `New note was added for ${applicant.first_name} ${applicant.last_name}: ` + note;
-    const text = `${user.first_name} ${user.last_name}: ${message}`;
 
-    const userSlack = await getSlackUserByEmail(user.user_email);
-    console.log('user from slack', userSlack);
+    // Get the Slack user ID using email
+    const slackUser = await getSlackUserByEmail(user.user_email);
+    const userMention = slackUser ? `<@${slackUser.id}>` : `${user.first_name} ${user.last_name}`;
 
+    const subject = "New Note Added";
+    const messageBody = `New note was added for ${applicant.first_name} ${applicant.last_name}: ${note}`;
+
+    const text = `${userMention}: ${subject}\n${messageBody}`;
 
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
         channel: process.env.SLACK_CHANNEL,
         text: text,
-        // blocks: block,
+        // Using blocks for more structured message with mention
+        blocks: [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": `${userMention}: *${subject}*`
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": messageBody
+                }
+            }
+        ],
     });
 };
