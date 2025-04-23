@@ -22,6 +22,7 @@ const getSlackUserByEmail = async (email) => {
     }
 };
 
+
 module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
     let applicant = await applicantModel.getApplicant(applicant_id);
@@ -31,10 +32,10 @@ module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
     const slackUser = await getSlackUserByEmail(user.user_email);
     const userMention = slackUser ? `<@${slackUser.id}>` : `${user.first_name} ${user.last_name}`;
 
-    const subject = "New Interview Created";
-    const messageBody = `New interview was created for ${applicant.first_name} ${applicant.last_name}`;
+    const subject = `New interview was created for *${applicant.first_name} ${applicant.last_name}*`;
 
-    const text = `${userMention}: ${subject}\n${messageBody}`;
+    // Fallback text for clients that don't support blocks
+    const text = `${userMention}: ${subject.replace(/\*/g, '')}`;
 
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
@@ -46,17 +47,12 @@ module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": `${userMention}: *${subject}*`
-                }
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": messageBody
+                    "text": `${userMention}: ${subject}`
                 }
             }
         ],
+        unfurl_links: false,
+        unfurl_media: false
     });
 };
 
@@ -69,31 +65,31 @@ module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
     const slackUser = await getSlackUserByEmail(user.user_email);
     const userMention = slackUser ? `<@${slackUser.id}>` : `${user.first_name} ${user.last_name}`;
 
-    const subject = "New Note Added";
-    const messageBody = `New note was added for ${applicant.first_name} ${applicant.last_name}: ${note}`;
+    const subject = `New note was added for *${applicant.first_name} ${applicant.last_name}*`;
 
-    const text = `${userMention}: ${subject}\n${messageBody}`;
-
+    // Note is already included in the subject, no need for duplicate content
+    // Remove the extra asterisk that was in the original code
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
         channel: process.env.SLACK_CHANNEL,
-        text: text,
-        // Using blocks for more structured message with mention
+        text: `${userMention}: ${subject.replace(/\*/g, '')} ${note}`,
         blocks: [
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": `${userMention}: *${subject}*`
+                    "text": `${userMention}: ${subject}`
                 }
             },
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": messageBody
+                    "text": `>${note}`  // Using blockquote for the note content
                 }
             }
         ],
+        unfurl_links: false,
+        unfurl_media: false
     });
 };
