@@ -2,22 +2,25 @@ const { App } = require("@slack/bolt");
 require("dotenv").config();
 const userModel = require("../models/user/userModel");
 const applicantModel = require("../models/applicant/applicantModel");
+
 const app = new App({
     signingSecret: process.env.SLACK_SIGNING_SECRET,
     token: process.env.SLACK_BOT_TOKEN,
-})
+});
 
-module.exports.messageBot = async (message, interviewer_id) => {
-    const text = `${message}`
+const getSlackUserByEmail = async (email) => {
+    try {
+        const result = await app.client.users.lookupByEmail({
+            token: process.env.SLACK_BOT_TOKEN,
+            email,
+        });
 
-    await app.client.chat.postMessage({
-        token: process.env.SLACK_BOT_TOKEN,
-        channel: process.env.SLACK_CHANNEL,
-        text: text,
-        // blocks: block,
-    });
+        return result.user; // full user info, including ID
+    } catch (error) {
+        console.error("Error fetching user by email:", error);
+        return null;
+    }
 };
-
 
 module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
@@ -41,6 +44,10 @@ module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
     applicant = applicant[0];
     const message = `New note was added for ${applicant.first_name} ${applicant.last_name}: ` + note;
     const text = `${user.first_name} ${user.last_name}: ${message}`;
+
+    const userSlack = await getSlackUserByEmail(user.user_email);
+    console.log('user from slack', userSlack);
+
 
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
