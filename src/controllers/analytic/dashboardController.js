@@ -204,6 +204,65 @@ exports.getApplicantSourceDistribution = async (req, res) => {
     }
 };
 
+
+exports.getApplicationSourceDistribution = async (req, res) => {
+    try {
+        const { company_id, month, year } = req.query;
+
+        let applicationSourceQuery;
+        let queryParams = [];
+        let dateFilter = '';
+
+        // Build date filter
+        if (month && year) {
+            dateFilter = 'AND MONTH(created_at) = ? AND YEAR(t.created_at) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(created_at) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(created_at) = ?';
+        }
+
+        if (company_id) {
+            applicationSourceQuery = `
+                SELECT applied_source, COUNT(*) as count
+                FROM ats_applicant_trackings
+                WHERE company_id = ? ${dateFilter}
+                GROUP BY applied_source
+                ORDER BY count DESC
+            `
+            queryParams = [company_id];
+            
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
+        }
+        else {
+            applicationSourceQuery = `
+                SELECT applied_source, COUNT(*) as count
+                FROM ats_applicant_trackings
+                WHERE 1=1 ${dateFilter}
+                GROUP BY applied_source
+                ORDER BY count DESC
+            `
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
+        }
+
+        const [ApplicationSourceDistribution] = await pool.execute(applicationSourceQuery, queryParams);
+
+        res.status(200).json({
+            success: true,
+            data: ApplicationSourceDistribution
+        });
+    }
+    catch (error) {
+        console.error("Error fetching applicant source distribution:", error.message);
+        res.status(500).json({ message: "Failed to fetch applicant source distribution" });
+    }
+}
+
+
 /**
  * Get job position analytics with month/year filtering
  */

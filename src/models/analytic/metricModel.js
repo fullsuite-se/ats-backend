@@ -70,17 +70,17 @@ const f_applicationsReceived = async (month, year) => {
 
 const f_topJobs = async (month, year) => {
     try {
-        let whereClause = 'WHERE p.status = \'JOB_OFFER_ACCEPTED\'';
+        let whereClause = 'WHERE ';
         let params = [];
 
         if (month && year) {
-            whereClause += ' AND MONTH(a.created_at) = ? AND YEAR(a.created_at) = ?';
+            whereClause += 'MONTH(a.created_at) = ? AND YEAR(a.created_at) = ?';
             params = [parseInt(month), parseInt(year)];
         } else if (month) {
-            whereClause += ' AND MONTH(a.created_at) = ?';
+            whereClause += 'MONTH(a.created_at) = ?';
             params = [parseInt(month)];
         } else if (year) {
-            whereClause += ' AND YEAR(a.created_at) = ?';
+            whereClause += 'YEAR(a.created_at) = ?';
             params = [parseInt(year)];
         }
 
@@ -175,9 +175,10 @@ const f_InternalExternalHires = async (month, year) => {
             FROM ats_applicant_trackings a 
             JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
             ${whereClause} 
-            AND a.applied_source IN ('REFERRAL', 'WALK_IN')`;
+            AND a.applied_source IN ('Referral', 'Walk In')`;
 
-
+        console.log(internalQuery);
+        
         const [internal] = await pool.execute(internalQuery, params);
 
         const externalQuery = `
@@ -185,7 +186,7 @@ const f_InternalExternalHires = async (month, year) => {
             FROM ats_applicant_trackings a 
             JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
             ${whereClause} 
-            AND a.applied_source IN ('LINKEDIN', 'SOCIAL_MEDIA', 'SUITELIFE')`;
+            AND a.applied_source IN ('Indeed', 'LinkedIn', 'Social Media', 'Suitelife', 'Career Fair')`;
 
 
         const [external] = await pool.execute(externalQuery, params);
@@ -299,7 +300,7 @@ const f_dropOffRate = async (month, year) => {
 
 
         const [allMonthlyDropOffs] = await pool.execute(allMonthlyQuery, progressParams);
-
+        
         return {
             overallDropOffRate: ((totalDropOffs / totalApplicants) * 100).toFixed(2) + '%',
             monthlyDropOffs: monthlyDropOffs.map(row => ({
