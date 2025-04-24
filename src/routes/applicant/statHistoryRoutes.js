@@ -4,5 +4,6 @@ const router = express.Router();
 const statusHistoryController = require("../../controllers/applicant/statusHistoryController");
 
 router.get("/:progressId", statusHistoryController.getApplicantStatusHistory);
+router.put("/:id", statusHistoryController.updateApplicantStatusHistory);
 
 module.exports = router;
