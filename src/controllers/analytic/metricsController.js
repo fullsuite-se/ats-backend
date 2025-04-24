@@ -13,7 +13,8 @@ exports.getMetrics = async (req, res) => {
         const topJobs = await metricModel.f_topJobs(month, year);
         const internalExternalHires = await metricModel.f_InternalExternalHires(month, year);
         const dropOffRate = await metricModel.f_dropOffRate(month, year);
-        const ratePerReasonForRejection = await metricModel.f_reasonRejection(month, year);
+        const ratePerReasonForBlacklisted = await metricModel.f_reasonForBlacklisted(month, year);
+        const ratePerReasonForRejection = await metricModel.f_reasonForRejection(month, year);
 
         // Include the applied filters in the response
         res.json({
@@ -24,7 +25,9 @@ exports.getMetrics = async (req, res) => {
             applicationsReceived,
             topJobs,
             internalExternalHires,
-            dropOffRate, ratePerReasonForRejection,
+            dropOffRate,
+            ratePerReasonForRejection,
+            ratePerReasonForBlacklisted
         });
     } catch (error) {
         console.error(error);
