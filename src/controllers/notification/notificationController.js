@@ -1,5 +1,6 @@
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
+const applicantController = require("../../controllers/applicant/applicantController");
 
 const generalNotification = async () => {
     const sql = `
@@ -52,6 +53,9 @@ const atsHealthCheckNotification = async () => {
     }
 };
 
+
+
+
 exports.addNotification = async (applicant_id, notification_type) => {
     try {
         const notification_id = uuidv4();
@@ -70,6 +74,16 @@ exports.addNotification = async (applicant_id, notification_type) => {
         return false;
 
     }
+}
+
+exports.removeFromNotification = async (req, res) => {
+    const applicant_id = req.params.applicant_id;
+    const notification_id = req.query.notification_id;
+
+    await pool.execute(`UPDATE ats_notifications SET is_viewed = 1 WHERE notification_id = ?`, [notification_id]);
+    req.params.applicant_id = applicant_id;
+    applicantController.getApplicant(req, res);
+
 }
 
 exports.getNotification = async (req, res) => {
