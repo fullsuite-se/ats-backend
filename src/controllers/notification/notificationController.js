@@ -52,7 +52,7 @@ const atsHealthCheckNotification = async () => {
     }
 };
 
-const addNotification = async (applicant_id, notification_type) => {
+exports.addNotification = async (applicant_id, notification_type) => {
     try {
         const notification_id = uuidv4();
 
@@ -83,3 +83,5 @@ exports.getNotification = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
