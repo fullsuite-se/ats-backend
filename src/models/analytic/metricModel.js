@@ -317,32 +317,84 @@ const f_dropOffRate = async (month, year) => {
     }
 };
 
+// analytic/metrics
 const f_reasonForBlacklisted = async (month, year) => {
-    const [rate_per_reasons] = await pool.execute(`
+    try {
+        let whereClause = 'WHERE reason IS NOT NULL';
+        const params = [];
+
+        if (month && year) {
+            whereClause += ' AND MONTH(updated_at) = ? AND YEAR(updated_at) = ?';
+            params.push(parseInt(month), parseInt(year));
+        } else if (month) {
+            whereClause += ' AND MONTH(updated_at) = ?';
+            params.push(parseInt(month));
+        } else if (year) {
+            whereClause += ' AND YEAR(updated_at) = ?';
+            params.push(parseInt(year));
+        }
+
+        const sql = `
             SELECT 
-                reason,
-                COUNT(reason) * 1.0 / (SELECT COUNT(*) FROM ats_applicant_progress WHERE reason IS NOT NULL) * 100 AS percentage
+                reason AS blacklisted_reason,
+                COUNT(reason) AS count,
+                IFNULL(COUNT(reason) * 1.0 / (SELECT COUNT(*) FROM ats_applicant_progress ${whereClause}), 0) * 100 AS percentage
             FROM ats_applicant_progress
-            WHERE reason IS NOT NULL
+            ${whereClause}
             GROUP BY reason
-        `);
+        `;
 
-    return rate_per_reasons;
-}
+        const [results] = await pool.execute(sql, params);
 
+        return results.map(row => ({
+            reason: row.blacklisted_reason,
+            count: row.count,
+            percentage: parseFloat(row.percentage).toFixed(2) + '%'
+        }));
+    } catch (error) {
+        console.error('Error fetching blacklist reasons:', error);
+        return null;
+    }
+};
+// analytic/metrics
 const f_reasonForRejection = async (month, year) => {
-    const [rate_per_reasons] = await pool.execute(`
+    try {
+        let whereClause = 'WHERE reason_for_rejection IS NOT NULL';
+        const params = [];
+
+        if (month && year) {
+            whereClause += ' AND MONTH(updated_at) = ? AND YEAR(updated_at) = ?';
+            params.push(parseInt(month), parseInt(year));
+        } else if (month) {
+            whereClause += ' AND MONTH(updated_at) = ?';
+            params.push(parseInt(month));
+        } else if (year) {
+            whereClause += ' AND YEAR(updated_at) = ?';
+            params.push(parseInt(year));
+        }
+
+        const sql = `
             SELECT 
-                reason_for_rejection,
-                COUNT(reason_for_rejection) * 1.0 / (SELECT COUNT(*) FROM ats_applicant_progress WHERE reason_for_rejection IS NOT NULL) * 100 AS percentage
+                reason_for_rejection AS rejection_reason,
+                COUNT(reason_for_rejection) AS count,
+                IFNULL(COUNT(reason_for_rejection) * 1.0 / (SELECT COUNT(*) FROM ats_applicant_progress ${whereClause}), 0) * 100 AS percentage
             FROM ats_applicant_progress
-            WHERE reason_for_rejection IS NOT NULL
+            ${whereClause}
             GROUP BY reason_for_rejection
-        `);
+        `;
 
-    return rate_per_reasons;
-}
+        const [results] = await pool.execute(sql, params);
 
+        return results.map(row => ({
+            reason: row.rejection_reason,
+            count: row.count,
+            percentage: parseFloat(row.percentage).toFixed(2) + '%'
+        }));
+    } catch (error) {
+        console.error('Error fetching rejection reasons:', error);
+        return null;
+    }
+};
 module.exports = {
     f_applicationsReceived,
     f_topJobs,
