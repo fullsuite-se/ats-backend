@@ -69,23 +69,6 @@ const checkDateElapsed = (applicant) => {
 }
 
 
-// const addNotification = async (data) => {
-//     try {
-//         const notification_id = uuidv4();
-
-//         const sql = `
-//             INSERT INTO ats_notifications (notification_id, notification_type, applicant_id) VALUES (?, ?, ?)
-//         `;
-//         const values = [notification_id, data.notification_type, data.applicant_id]
-
-//         await pool.execute(sql, values);
-//         return true;
-//     } catch (error) {
-//         console.log(error);
-//         return false
-//     }
-// }
-
 const updateStatusCronJob = () => {
     /*
     get blacklisted applicants
