@@ -2,7 +2,7 @@ const cron = require("node-cron")
 const pool = require("../../config/db");
 const { differenceInMonths } = require("date-fns");
 const { v4: uuidv4 } = require("uuid");
-
+const notificationController = require("../../controllers/notification/notificationController");
 const getBlackListedApplicants = async () => {
     const sql = `
                 SELECT * 
@@ -69,23 +69,6 @@ const checkDateElapsed = (applicant) => {
 }
 
 
-const addNotification = async (data) => {
-    try {
-        const notification_id = uuidv4();
-
-        const sql = `
-            INSERT INTO ats_notifications (notification_id, notification_type, applicant_id) VALUES (?, ?, ?)
-        `;
-        const values = [notification_id, data.notification_type, data.applicant_id]
-
-        await pool.execute(sql, values);
-        return true;
-    } catch (error) {
-        console.log(error);
-        return false
-    }
-}
-
 const updateStatusCronJob = () => {
     /*
     get blacklisted applicants
@@ -103,24 +86,22 @@ const updateStatusCronJob = () => {
             const blacklistedApplicants = await getBlackListedApplicants();
 
             //check
-            blacklistedApplicants.forEach(applicant => {
+            for (const applicant of blacklistedApplicants) {
                 if (checkDateElapsed(applicant)) {
-                    updateStatus(applicant);
+                    await updateStatus(applicant);
 
                     //sent to notification
-                    const data = { notification_type: "BLACKLISTED LIFTED", applicant_id: applicant.applicant_id }
-                    if (addNotification(data)) {
+                    const success = await notificationController.addNotification(applicant.applicant_id, "BLACKLISTED LIFTED");
+
+                    if (success) {
                         console.log("blacklisted status lifted");
                     }
-
                 }
-            });
+            }
         } catch (error) {
             console.log(error);
         }
     });
-
-
 }
 
 
