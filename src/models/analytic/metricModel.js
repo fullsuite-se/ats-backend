@@ -317,7 +317,7 @@ const f_dropOffRate = async (month, year) => {
     }
 };
 
-const f_reasonRejection = async (month, year) => {
+const f_reasonForBlacklisted = async (month, year) => {
     const [rate_per_reasons] = await pool.execute(`
             SELECT 
                 reason,
@@ -330,10 +330,24 @@ const f_reasonRejection = async (month, year) => {
     return rate_per_reasons;
 }
 
+const f_reasonForRejection = async (month, year) => {
+    const [rate_per_reasons] = await pool.execute(`
+            SELECT 
+                reason_for_rejection,
+                COUNT(reason_for_rejection) * 1.0 / (SELECT COUNT(*) FROM ats_applicant_progress WHERE reason_for_rejection IS NOT NULL) * 100 AS percentage
+            FROM ats_applicant_progress
+            WHERE reason_for_rejection IS NOT NULL
+            GROUP BY reason_for_rejection
+        `);
+
+    return rate_per_reasons;
+}
+
 module.exports = {
     f_applicationsReceived,
     f_topJobs,
     f_InternalExternalHires,
     f_dropOffRate,
-    f_reasonRejection,
+    f_reasonForBlacklisted,
+    f_reasonForRejection
 }
