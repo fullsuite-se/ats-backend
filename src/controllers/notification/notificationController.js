@@ -53,9 +53,6 @@ const atsHealthCheckNotification = async () => {
     }
 };
 
-
-
-
 exports.addNotification = async (applicant_id, notification_type) => {
     try {
         const notification_id = uuidv4();
@@ -78,13 +75,15 @@ exports.addNotification = async (applicant_id, notification_type) => {
 
 exports.removeFromNotification = async (req, res) => {
     const applicant_id = req.params.applicant_id;
-    const notification_id = req.query.notification_id;
 
-    await pool.execute(`UPDATE ats_notifications SET is_viewed = 1 WHERE notification_id = ?`, [notification_id]);
-    req.params.applicant_id = applicant_id;
-    applicantController.getApplicant(req, res);
-
-}
+    try {
+        await pool.execute(`UPDATE ats_notifications SET is_viewed = 1 WHERE applicant_id = ?`, [applicant_id]);
+        return res.status(200).json({ message: "removed notification active status" });
+    } catch (error) {
+        console.error('DB error:', error);
+        return res.status(500).json({ message: "Server error" });
+    }
+};
 
 exports.getNotification = async (req, res) => {
     try {
