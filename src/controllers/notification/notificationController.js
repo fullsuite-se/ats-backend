@@ -1,6 +1,5 @@
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
-const applicantController = require("../../controllers/applicant/applicantController");
 
 const generalNotification = async () => {
     const sql = `
@@ -12,18 +11,21 @@ const generalNotification = async () => {
             t.created_at AS date_applied,
             t.updated_at AS date_update, 
             t.updated_by, 
+            p.*,
             j.title
         FROM ats_notifications n
         LEFT JOIN ats_applicants a ON n.applicant_id = a.applicant_id
         LEFT JOIN  ats_applicant_trackings t ON a.applicant_id = t.applicant_id
         LEFT JOIN sl_company_jobs j ON j.job_id = t.position_id
+        LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
         WHERE n.is_viewed = 0
-        ORDER BY n.created_at DESC
         LIMIT 20
     `;
 
     try {
-        const [rows] = await pool.query(sql);
+        const [rows] = await pool.execute(sql);
+        console.log('notif', rows);
+
         return rows;
     } catch (error) {
         console.error("Error fetching general notifications:", error);

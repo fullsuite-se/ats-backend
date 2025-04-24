@@ -151,7 +151,7 @@ exports.addApplicant = async (req, res) => {
       await emailController.emailTestAssessment(applicant_id, USER_ID);
     }
 
-    if (isFromATS) {
+    if (!isFromATS) {
       await notificationController.addNotification(applicant_id, "NEW APPLICANT")
     }
 
