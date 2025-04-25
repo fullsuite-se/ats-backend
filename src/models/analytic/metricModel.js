@@ -175,7 +175,7 @@ const f_InternalExternalHires = async (month, year) => {
             FROM ats_applicant_trackings a 
             JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
             ${whereClause} 
-            AND a.applied_source IN ('Referral', 'Walk In')`;
+            AND a.applied_source IN ('Referral', 'Internship')`;
 
         console.log(internalQuery);
         
@@ -323,16 +323,20 @@ const f_reasonForBlacklisted = async (month, year) => {
     try {
         let whereClause = 'WHERE reason IS NOT NULL';
         const params = [];
+        const subqueryParams = []
 
         if (month && year) {
             whereClause += ' AND MONTH(updated_at) = ? AND YEAR(updated_at) = ?';
             params.push(parseInt(month), parseInt(year));
+            subqueryParams.push(parseInt(month), parseInt(year));
         } else if (month) {
             whereClause += ' AND MONTH(updated_at) = ?';
             params.push(parseInt(month));
+            subqueryParams.push(parseInt(month));
         } else if (year) {
             whereClause += ' AND YEAR(updated_at) = ?';
             params.push(parseInt(year));
+            subqueryParams.push(parseInt(year));
         }
 
         const sql = `
@@ -345,7 +349,7 @@ const f_reasonForBlacklisted = async (month, year) => {
             GROUP BY reason
         `;
 
-        const [results] = await pool.execute(sql, params);
+        const [results] = await pool.execute(sql, [...params, ...subqueryParams]);
 
         return results.map(row => ({
             reason: row.blacklisted_reason,
@@ -362,29 +366,41 @@ const f_reasonForRejection = async (month, year) => {
     try {
         let whereClause = 'WHERE reason_for_rejection IS NOT NULL';
         const params = [];
+        const subqueryParams = [];
 
         if (month && year) {
             whereClause += ' AND MONTH(updated_at) = ? AND YEAR(updated_at) = ?';
             params.push(parseInt(month), parseInt(year));
+            subqueryParams.push(parseInt(month), parseInt(year));
         } else if (month) {
             whereClause += ' AND MONTH(updated_at) = ?';
             params.push(parseInt(month));
+            subqueryParams.push(parseInt(month));
         } else if (year) {
             whereClause += ' AND YEAR(updated_at) = ?';
             params.push(parseInt(year));
+            subqueryParams.push(parseInt(year));
         }
 
         const sql = `
             SELECT 
                 reason_for_rejection AS rejection_reason,
                 COUNT(reason_for_rejection) AS count,
-                IFNULL(COUNT(reason_for_rejection) * 1.0 / (SELECT COUNT(*) FROM ats_applicant_progress ${whereClause}), 0) * 100 AS percentage
+                IFNULL(
+                    COUNT(reason_for_rejection) * 1.0 / (
+                        SELECT COUNT(*) 
+                        FROM ats_applicant_progress 
+                        WHERE reason_for_rejection IS NOT NULL
+                        ${month || year ? ' AND ' + whereClause.replace('WHERE ', '') : ''}
+                    ), 
+                    0
+                ) * 100 AS percentage
             FROM ats_applicant_progress
             ${whereClause}
             GROUP BY reason_for_rejection
         `;
 
-        const [results] = await pool.execute(sql, params);
+        const [results] = await pool.execute(sql, [...params, ...subqueryParams]);
 
         return results.map(row => ({
             reason: row.rejection_reason,
@@ -396,6 +412,7 @@ const f_reasonForRejection = async (month, year) => {
         return null;
     }
 };
+
 module.exports = {
     f_applicationsReceived,
     f_topJobs,
