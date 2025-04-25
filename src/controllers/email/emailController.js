@@ -89,7 +89,7 @@ exports.emailApplicant = async (req, res) => {
 
         // Create mail options
         const mailOptions = {
-            from: `"Fullsuite" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
@@ -142,7 +142,7 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
 
         // Create mail options
         const mailOptions = {
-            from: `"Fullsuite" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
@@ -223,7 +223,7 @@ exports.notifyUsersNewApplicant = async (applicant_id) => {
         `;
 
         const mailOptions = {
-            from: `"FullSuite" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             subject: emailSubject.replace(/<[^>]+>/g, ""), // remove HTML for plain subject
             html: emailBody,
@@ -258,7 +258,7 @@ exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
 
         // Create mail options
         const mailOptions = {
-            from: `"FullSuite" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
