@@ -174,6 +174,76 @@ exports.emailApplicantTestAssessment = async (req, res) => {
     }
 }
 
+exports.notifyUsersNewApplicant = async (applicant_id) => {
+    try {
+        const users = await userModel.getAllUserAccounts();
+
+        const recipientEmails = users
+            .filter(user =>
+                (user.service_features || []).some(
+                    feature => feature.feature_name === "Receive Email"
+                )
+            )
+            .map(user => user.user_email);
+
+        if (recipientEmails.length === 0) {
+            console.log("No recipients found for the notification.");
+            return false;
+        }
+
+        const USER_ID = process.env.USER_ID;
+        const [userData, applicantArray] = await Promise.all([
+            userModel.getUserInfo(USER_ID),
+            applicantModel.getApplicant(applicant_id)
+        ]);
+
+        const applicantData = applicantArray[0];
+        console.log('applicant data', applicantData);
+
+        const emailSubject = `📩 New Applicant for <strong>${applicantData.job_title}</strong> Position`;
+
+        const emailBody = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2 style="color: #2c3e50;">🚀 New Application Received</h2>
+                <p>
+                    A new applicant has applied for the position of 
+                    <strong style="color: #2980b9;">${applicantData.job_title}</strong>.
+                </p>
+                <ul>
+                    <li><strong>Name:</strong> ${applicantData.first_name} ${applicantData.last_name}</li>
+                    <li><strong>Email:</strong> ${applicantData.email_1}</li>
+                    <li><strong>Mobile:</strong> ${applicantData.mobile_number_1}</li>
+                    <li><strong>CV:</strong> <a href="${applicantData.cv_link}" target="_blank">View CV</a></li>
+                    <li><strong>Assessment:</strong> <a href="${applicantData.assessment_url}" target="_blank">View Assessment</a></li>
+                    <li><strong>Discovered At:</strong> ${applicantData.discovered_at}</li>
+                </ul>
+                <hr />
+                ${emailSignature(userData)}
+            </div>
+        `;
+
+        const mailOptions = {
+            from: `"${userData.company_name}" <${userData.user_email}>`,
+            to: recipientEmails,
+            subject: emailSubject.replace(/<[^>]+>/g, ""), // remove HTML for plain subject
+            html: emailBody,
+        };
+
+        const transporter = createTransporter({
+            email_user: userData.user_email,
+            email_pass: userData.app_password
+        });
+
+        await transporter.sendMail(mailOptions);
+        return true;
+
+    } catch (error) {
+        console.error("Error notifying users of new applicant:", error.message);
+        return false;
+    }
+};
+
+
 exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
     // we'll use a default user. 
     // VARIABLES USED WHEN APPLIED FROM SUITELIFER'S WEBSITE. 
@@ -188,7 +258,7 @@ exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
 
         // Create mail options
         const mailOptions = {
-            from: `"FullSuite" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
