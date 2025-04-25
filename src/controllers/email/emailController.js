@@ -89,7 +89,7 @@ exports.emailApplicant = async (req, res) => {
 
         // Create mail options
         const mailOptions = {
-            from: `"${userData.company_name}" <${userData.user_email}>`,
+            from: `"Fullsuite" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
@@ -142,7 +142,7 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
 
         // Create mail options
         const mailOptions = {
-            from: `"${userData.company_name}" <${userData.user_email}>`,
+            from: `"Fullsuite" <${userData.user_email}>`,
             to: recipientEmails,
             subject: email_subject,
             html: email_body,
