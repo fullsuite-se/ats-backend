@@ -47,17 +47,56 @@ exports.getUserInfo = async (req, res) => {
 };
 
 exports.getAllUserAccounts = async (req, res) => {
+
+    const sql = `
+        SELECT 
+            u.user_id, 
+            u.user_email, 
+            u.user_key, 
+            u.is_deactivated, 
+            u.created_at,
+            d.company_id, 
+            d.job_title_id, 
+            d.department_id, 
+            d.division_id, 
+            d.upline_id,
+            i.user_info_id, 
+            i.first_name, 
+            i.middle_name, 
+            i.last_name, 
+            i.extension_name,
+            i.sex, 
+            i.user_pic, 
+            i.personal_email, 
+            i.contact_number, 
+            i.birthdate,
+            (
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'service_feature_id', sf.service_feature_id,
+                        'feature_name', sf.feature_name,
+                        'description', sf.description,
+                        'category', sf.category
+                    )
+                ) AS service_features
+                FROM hris_user_access_permissions uap
+                JOIN service_features sf ON uap.service_feature_id = sf.service_feature_id
+                WHERE uap.user_id = u.user_id
+            ) AS service_features
+        FROM hris_user_accounts u
+        LEFT JOIN hris_user_designations d ON u.user_id = d.user_id
+        LEFT JOIN hris_user_infos i ON u.user_id = i.user_id
+    `;
+
     try {
         const results = await userModel.getAllUserAccounts();
 
-        // Parse the JSON string for service_features if it exists
         const parsedResults = results.map(user => {
             let serviceFeatures = [];
             try {
-                if (typeof user.service_features === 'string') {
+                if (typeof user.service_features === "string") {
                     serviceFeatures = JSON.parse(user.service_features);
-                } else if (typeof user.service_features === 'object') {
-                    // Handle cases where the database returns an object instead of a JSON string
+                } else if (typeof user.service_features === "object") {
                     serviceFeatures = user.service_features;
                 }
             } catch (err) {
@@ -66,7 +105,7 @@ exports.getAllUserAccounts = async (req, res) => {
 
             return {
                 ...user,
-                service_features: serviceFeatures || [] // Default to an empty array if parsing fails
+                service_features: serviceFeatures || []
             };
         });
 
