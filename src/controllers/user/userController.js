@@ -73,7 +73,9 @@ exports.getAllUserAccounts = async (req, res) => {
                 SELECT JSON_ARRAYAGG(
                     JSON_OBJECT(
                         'service_feature_id', sf.service_feature_id,
-                        'feature_name', sf.feature_name
+                        'feature_name', sf.feature_name,
+                        'description', sf.description,
+                        'category', sf.category
                     )
                 ) AS service_features
                 FROM hris_user_access_permissions uap
@@ -88,14 +90,12 @@ exports.getAllUserAccounts = async (req, res) => {
     try {
         const [results] = await pool.execute(sql);
 
-        // Parse the JSON string for service_features if it exists
         const parsedResults = results.map(user => {
             let serviceFeatures = [];
             try {
-                if (typeof user.service_features === 'string') {
+                if (typeof user.service_features === "string") {
                     serviceFeatures = JSON.parse(user.service_features);
-                } else if (typeof user.service_features === 'object') {
-                    // Handle cases where the database returns an object instead of a JSON string
+                } else if (typeof user.service_features === "object") {
                     serviceFeatures = user.service_features;
                 }
             } catch (err) {
@@ -104,13 +104,13 @@ exports.getAllUserAccounts = async (req, res) => {
 
             return {
                 ...user,
-                service_features: serviceFeatures || [] // Default to an empty array if parsing fails
+                service_features: serviceFeatures || []
             };
         });
 
-        return res.status(200).json({ 
-            message: "User accounts retrieved", 
-            userAccounts: parsedResults 
+        return res.status(200).json({
+            message: "User accounts retrieved",
+            userAccounts: parsedResults
         });
     } catch (error) {
         console.error("Error fetching user accounts:", error);
