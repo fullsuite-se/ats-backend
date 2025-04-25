@@ -69,6 +69,7 @@ exports.getAllUserAccounts = async (req, res) => {
             i.personal_email, 
             i.contact_number, 
             i.birthdate,
+            t.*,
             (
                 SELECT JSON_ARRAYAGG(
                     JSON_OBJECT(
@@ -83,6 +84,7 @@ exports.getAllUserAccounts = async (req, res) => {
         FROM hris_user_accounts u
         LEFT JOIN hris_user_designations d ON u.user_id = d.user_id
         LEFT JOIN hris_user_infos i ON u.user_id = i.user_id
+        LEFT JOIN company_job_titles t ON d.job_title_id = t.job_title_id
     `;
 
     try {
@@ -108,9 +110,9 @@ exports.getAllUserAccounts = async (req, res) => {
             };
         });
 
-        return res.status(200).json({ 
-            message: "User accounts retrieved", 
-            userAccounts: parsedResults 
+        return res.status(200).json({
+            message: "User accounts retrieved",
+            userAccounts: parsedResults
         });
     } catch (error) {
         console.error("Error fetching user accounts:", error);
@@ -129,8 +131,8 @@ exports.updateUserAccount = async (req, res) => {
         console.log("USER ID:", user_id);
         console.log("JOB TITLE ID:", data.job_title_id); // Log job_title_id
 
-        const hashedPassword = data.user_password 
-            ? await bcrypt.hash(data.user_password, 10) 
+        const hashedPassword = data.user_password
+            ? await bcrypt.hash(data.user_password, 10)
             : null;
 
         console.log("HASHED PASSWORD:", hashedPassword);
@@ -142,8 +144,8 @@ exports.updateUserAccount = async (req, res) => {
             SET ${setClause}
             WHERE user_id = ?
         `;
-        const userAccountValues = hashedPassword 
-            ? [data.user_email, hashedPassword, user_id] 
+        const userAccountValues = hashedPassword
+            ? [data.user_email, hashedPassword, user_id]
             : [data.user_email, user_id];
 
         console.log("UPDATE USER ACCOUNT SQL:", updateUserAccountSQL);
