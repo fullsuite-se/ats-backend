@@ -149,10 +149,8 @@ exports.addApplicant = async (req, res) => {
     // Send test email if from FS
     if (!isFromATS) {
       await emailController.emailTestAssessment(applicant_id, USER_ID);
-    }
-
-    if (!isFromATS) {
-      await notificationController.addNotification(applicant_id, "NEW APPLICANT")
+      await notificationController.addNotification(applicant_id, "NEW APPLICANT");
+      await emailController.notifyUsersNewApplicant(applicant_id);
     }
 
     return res.status(201).json({ message: "successfully inserted" });

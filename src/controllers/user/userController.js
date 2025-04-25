@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
-
+const userModel = require("../../models/user/userModel");
 const getUserInfoSQL = `
     SELECT
         hris_user_accounts.user_id, 
@@ -47,6 +47,7 @@ exports.getUserInfo = async (req, res) => {
 };
 
 exports.getAllUserAccounts = async (req, res) => {
+
     const sql = `
         SELECT 
             u.user_id, 
@@ -88,7 +89,7 @@ exports.getAllUserAccounts = async (req, res) => {
     `;
 
     try {
-        const [results] = await pool.execute(sql);
+        const results = await userModel.getAllUserAccounts();
 
         const parsedResults = results.map(user => {
             let serviceFeatures = [];
@@ -129,8 +130,8 @@ exports.updateUserAccount = async (req, res) => {
         console.log("USER ID:", user_id);
         console.log("JOB TITLE ID:", data.job_title_id); // Log job_title_id
 
-        const hashedPassword = data.user_password 
-            ? await bcrypt.hash(data.user_password, 10) 
+        const hashedPassword = data.user_password
+            ? await bcrypt.hash(data.user_password, 10)
             : null;
 
         console.log("HASHED PASSWORD:", hashedPassword);
@@ -142,8 +143,8 @@ exports.updateUserAccount = async (req, res) => {
             SET ${setClause}
             WHERE user_id = ?
         `;
-        const userAccountValues = hashedPassword 
-            ? [data.user_email, hashedPassword, user_id] 
+        const userAccountValues = hashedPassword
+            ? [data.user_email, hashedPassword, user_id]
             : [data.user_email, user_id];
 
         console.log("UPDATE USER ACCOUNT SQL:", updateUserAccountSQL);
