@@ -174,6 +174,49 @@ exports.emailApplicantTestAssessment = async (req, res) => {
     }
 }
 
+exports.notifyUsersNewApplicant = async (applicant_id) => {
+    try {
+        const users = await userModel.getAllUserAccounts();
+        const recipientEmails = [];
+
+        for (const user of users) {
+            if ((user.service_features || []).some(feature => feature.feature_name === "Receive Email")) {
+                recipientEmails.push(user.user_email);
+            }
+        }
+
+        const USER_ID = process.env.USER_ID;
+        const userData = await userModel.getUserInfo(USER_ID);
+        let applicantData = await applicantModel.getApplicant(applicant_id);
+        applicantData = applicantData[0];
+
+        console.log('applicant data', applicantData);
+
+
+        const email_subject = `New Applicant for ${applicantData.job_title} Position`;
+        let email_body = `New application for ${applicantData.job_title} Position`;
+        const emailSignatureString = emailSignature(userData);
+        email_body = email_body + emailSignatureString;
+
+
+        // Create mail options
+        const mailOptions = {
+            from: `"FullSuite" <${userData.user_email}>`,
+            to: recipientEmails,
+            subject: email_subject,
+            html: email_body,
+        };
+
+        //create transporter
+        const transporter = createTransporter({ email_user: userData.user_email, email_pass: userData.app_password })
+        const info = await transporter.sendMail(mailOptions);
+        return true
+    } catch (error) {
+        console.log(error.message);
+        return false
+    }
+}
+
 exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
     // we'll use a default user. 
     // VARIABLES USED WHEN APPLIED FROM SUITELIFER'S WEBSITE. 
