@@ -29,7 +29,5 @@ router.get('/interview-schedule', dashboardController.getInterviewScheduleAnalyt
 // Hiring funnel metrics
 router.get('/hiring-funnel', dashboardController.getHiringFunnelMetrics);
 
-// Time to hire metrics
-router.get('/time-to-hire', dashboardController.getTimeToHireMetrics);
 
 module.exports = router;
