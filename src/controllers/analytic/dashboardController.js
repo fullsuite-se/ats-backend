@@ -604,65 +604,6 @@ exports.getHiringFunnelMetrics = async (req, res) => {
     }
 };
 
-/**
- * Get time-to-hire metrics with month/year filtering
- */
-exports.getTimeToHireMetrics = async (req, res) => {
-    try {
-        const { company_id, position_id, month, year } = req.query;
-
-        let timeToHireQuery = `
-      SELECT 
-        j.job_id,
-        j.title,
-        AVG(DATEDIFF(
-          (SELECT MAX(changed_at) FROM ats_applicant_status_history 
-           WHERE progress_id = t.progress_id AND new_status = 'JOB_OFFER_ACCEPTED'), 
-          t.created_at
-        )) AS avg_days_to_hire
-      FROM ats_applicant_trackings t
-      JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-      JOIN sl_company_jobs j ON t.position_id = j.job_id
-      WHERE p.status = 'JOB_OFFER_ACCEPTED'
-    `;
-
-        let queryParams = [];
-
-        if (company_id) {
-            timeToHireQuery += " AND t.company_id = ?";
-            queryParams.push(company_id);
-        }
-
-        if (position_id) {
-            timeToHireQuery += " AND t.position_id = ?";
-            queryParams.push(position_id);
-        }
-        
-        // Add month/year filtering
-        if (month && year) {
-            timeToHireQuery += " AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?";
-            queryParams.push(parseInt(month), parseInt(year));
-        } else if (month) {
-            timeToHireQuery += " AND MONTH(t.created_at) = ?";
-            queryParams.push(parseInt(month));
-        } else if (year) {
-            timeToHireQuery += " AND YEAR(t.created_at) = ?";
-            queryParams.push(parseInt(year));
-        }
-
-        timeToHireQuery += " GROUP BY j.job_id, j.title";
-
-        const [timeToHireData] = await pool.execute(timeToHireQuery, queryParams);
-
-        res.status(200).json({
-            success: true,
-            data: timeToHireData
-        });
-    } catch (error) {
-        console.error("Error fetching time-to-hire metrics:", error.message);
-        res.status(500).json({ message: "Failed to fetch time-to-hire metrics" });
-    }
-};
 
 /**
  * Get monthly applicant trends with month/year filtering
