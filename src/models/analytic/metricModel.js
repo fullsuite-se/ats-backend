@@ -1,74 +1,43 @@
 const pool = require("../../config/db");
 
-const f_applicationsReceived = async (month, year) => {
+const f_applicationsReceived = async (month, year, position_id) => {
     try {
         let whereClause = '';
         let params = [];
 
-        if (month && year) {
-            whereClause = 'WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?';
-            params = [parseInt(month), parseInt(year)];
-        } else if (month) {
-            whereClause = 'WHERE MONTH(created_at) = ?';
-            params = [parseInt(month)];
-        } else if (year) {
-            whereClause = 'WHERE YEAR(created_at) = ?';
-            params = [parseInt(year)];
+        if (month || year || position_id) {
+            const conditions = [];
+
+            if (month) {
+                conditions.push('MONTH(created_at) = ?');
+                params.push(parseInt(month));
+            }
+            if (year) {
+                conditions.push('YEAR(created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('position_id = ?');
+                params.push(position_id);
+            }
+
+            whereClause = "WHERE " + conditions.join(" AND ")
         }
 
-        const totalQuery = `SELECT COUNT(*) AS total_applications FROM ats_applicant_trackings ${whereClause}`;
 
+        const totalQuery = `SELECT COUNT(*) AS count 
+                            FROM ats_applicant_trackings
+                            ${whereClause}`;
 
         const [overall] = await pool.execute(totalQuery, params);
-
-        // For breakdown, we keep the 3-month window but can additionally filter by month/year
-        let breakdownQuery = `
-            SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count 
-            FROM ats_applicant_trackings 
-            WHERE created_at >= (
-                SELECT MAX(created_at) FROM ats_applicant_trackings
-            ) - INTERVAL 3 MONTH`;
-
-        // Add month/year filter if provided
-        if (month && year) {
-            breakdownQuery += ` AND MONTH(created_at) = ? AND YEAR(created_at) = ?`;
-        } else if (month) {
-            breakdownQuery += ` AND MONTH(created_at) = ?`;
-        } else if (year) {
-            breakdownQuery += ` AND YEAR(created_at) = ?`;
-        }
-
-        breakdownQuery += ` GROUP BY month ORDER BY month DESC`;
-
-
-        const [breakdown] = await pool.execute(breakdownQuery, params);
-
-        // For all months count, apply the same filtering
-        let allCountQuery = `
-            SELECT DATE_FORMAT(created_at, '%m') AS month, COUNT(*) AS count 
-            FROM ats_applicant_trackings`;
-
-        if (whereClause) {
-            allCountQuery += ` ${whereClause}`;
-        }
-
-        allCountQuery += ` GROUP BY month ORDER BY month DESC`;
-
-
-        const [allCountPerMonth] = await pool.execute(allCountQuery, params);
-
-        return {
-            total: overall[0].total_applications,
-            breakdown: breakdown,
-            allCountPerMonth: allCountPerMonth
-        };
+        return overall[0].count;
     } catch (error) {
         console.error(error);
         return null;
     }
 };
 
-const f_topJobs = async (month, year) => {
+const f_topJobs = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE ';
         let params = [];
@@ -88,7 +57,7 @@ const f_topJobs = async (month, year) => {
         const totalHiresQuery = `
             SELECT COUNT(*) AS totalHires
             FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
+            JOIN sl_company_jobs j ON a.position_id_id = j.job_id
             JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
             ${whereClause}
         `;
@@ -100,7 +69,7 @@ const f_topJobs = async (month, year) => {
         const topJobsQuery = `
             SELECT j.title, COUNT(a.applicant_id) AS hires
             FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
+            JOIN sl_company_jobs j ON a.position_id_id = j.job_id
             JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
             ${whereClause}
             GROUP BY j.title
@@ -111,19 +80,6 @@ const f_topJobs = async (month, year) => {
 
         const [topJobs] = await pool.execute(topJobsQuery, params);
 
-        // All jobs query
-        const allJobsQuery = `
-            SELECT j.title, COUNT(a.applicant_id) AS hires
-            FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
-            ${whereClause}
-            GROUP BY j.title
-            ORDER BY hires DESC
-        `;
-
-        const [allJobs] = await pool.execute(allJobsQuery, params);
-
         return {
             formattedTopJobs: topJobs.map(job => ({
                 title: job.title,
@@ -132,13 +88,6 @@ const f_topJobs = async (month, year) => {
                     ? ((job.hires / totalHires) * 100).toFixed(2) + '%'
                     : '0%'
             })),
-            formattedAllJobs: allJobs.map(job => ({
-                title: job.title,
-                hires: job.hires,
-                percentage: totalHires
-                    ? ((job.hires / totalHires) * 100).toFixed(2) + '%'
-                    : '0%'
-            }))
         };
     } catch (error) {
         console.error('Error fetching top jobs:', error);
@@ -146,7 +95,7 @@ const f_topJobs = async (month, year) => {
     }
 };
 
-const f_InternalExternalHires = async (month, year) => {
+const f_InternalExternalHires = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE p.status = \'JOB_OFFER_ACCEPTED\'';
         let params = [];
@@ -178,7 +127,7 @@ const f_InternalExternalHires = async (month, year) => {
             AND a.applied_source IN ('Referral', 'Internship')`;
 
         console.log(internalQuery);
-        
+
         const [internal] = await pool.execute(internalQuery, params);
 
         const externalQuery = `
@@ -191,16 +140,6 @@ const f_InternalExternalHires = async (month, year) => {
 
         const [external] = await pool.execute(externalQuery, params);
 
-        // Source breakdown query
-        const breakdownQuery = `
-            SELECT a.applied_source, COUNT(*) AS count
-            FROM ats_applicant_trackings a 
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
-            ${whereClause}
-            GROUP BY a.applied_source`;
-
-
-        const [breakdown] = await pool.execute(breakdownQuery, params);
 
         return {
             internal: internal[0].internal_hires,
@@ -208,11 +147,6 @@ const f_InternalExternalHires = async (month, year) => {
             internalRate: totalHires ? (internal[0].internal_hires / totalHires) * 100 : 0,
             externalRate: totalHires ? (external[0].external_hires / totalHires) * 100 : 0,
             totalHires: totalHires,
-            breakdown: breakdown.map(row => ({
-                applied_source: row.applied_source,
-                count: row.count,
-                rate: totalHires ? (row.count / totalHires) * 100 : 0,
-            }))
         };
     } catch (error) {
         console.error(error);
@@ -220,7 +154,7 @@ const f_InternalExternalHires = async (month, year) => {
     }
 };
 
-const f_dropOffRate = async (month, year) => {
+const f_dropOffRate = async (month, year, position_id) => {
     try {
         let whereClause = '';
         let progressWhereClause = 'WHERE status IN (\'WITHDREW_APPLICATION\', \'JOB_OFFER_REJECTED\', \'BLACKLISTED\', \'NOT_FIT\')';
@@ -262,7 +196,7 @@ const f_dropOffRate = async (month, year) => {
         let dropOffsQuery = `
             SELECT COUNT(*) AS totalDropOffs 
             FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
+            JOIN sl_company_jobs j ON a.position_id_id = j.job_id
             JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
             WHERE p.status IN ('WITHDREW_APPLICATION', 'JOB_OFFER_REJECTED', 'BLACKLISTED', 'NOT_FIT')`;
 
@@ -276,31 +210,6 @@ const f_dropOffRate = async (month, year) => {
 
         const [[{ totalDropOffs }]] = await pool.execute(dropOffsQuery, params);
 
-        // Monthly drop-offs for last 3 months
-        let monthlyQuery = `
-            SELECT DATE_FORMAT(updated_at, '%Y-%m') AS month, COUNT(*) AS count
-            FROM ats_applicant_progress 
-            ${progressWhereClause}
-            AND updated_at >= (
-                SELECT MAX(updated_at) FROM ats_applicant_trackings
-            ) - INTERVAL 3 MONTH
-            GROUP BY month
-            ORDER BY month DESC`;
-
-
-        const [monthlyDropOffs] = await pool.execute(monthlyQuery, progressParams);
-
-        // All monthly drop-offs
-        let allMonthlyQuery = `
-            SELECT DATE_FORMAT(updated_at, '%Y-%m') AS month, COUNT(*) AS count
-            FROM ats_applicant_progress 
-            ${progressWhereClause}
-            GROUP BY month
-            ORDER BY month DESC`;
-
-
-        const [allMonthlyDropOffs] = await pool.execute(allMonthlyQuery, progressParams);
-        
         return {
             overallDropOffRate: ((totalDropOffs / totalApplicants) * 100).toFixed(2) + '%',
             monthlyDropOffs: monthlyDropOffs.map(row => ({
@@ -318,8 +227,14 @@ const f_dropOffRate = async (month, year) => {
     }
 };
 
+
+
+
+
+
+
 // analytic/metrics
-const f_reasonForBlacklisted = async (month, year) => {
+const f_reasonForBlacklisted = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE reason IS NOT NULL';
         const params = [];
@@ -362,7 +277,7 @@ const f_reasonForBlacklisted = async (month, year) => {
     }
 };
 // analytic/metrics
-const f_reasonForRejection = async (month, year) => {
+const f_reasonForRejection = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE reason_for_rejection IS NOT NULL';
         const params = [];
