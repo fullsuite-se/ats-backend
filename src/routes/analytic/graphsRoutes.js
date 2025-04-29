@@ -10,7 +10,7 @@ router.get('/source', graphsController.source);
 router.get('/requisition', graphsController.requisition);
 
 // /analytic/graphs/application-trend
-router.get('/application-trend', graphsController.applicationTrend); 
+router.get('/application-trend', graphsController.applicationTrend);
 
 // /analytic/graphs/top-applied-jobs
 
