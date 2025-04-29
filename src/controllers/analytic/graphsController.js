@@ -135,69 +135,6 @@ exports.topAppliedJobs = async (req, res) => {
     }
 };
 
-// exports.applicationTrend = async (req, res) => {
-//     try {
-//         const { month, year, position_id } = req.query;
-
-//         let whereClause = '';
-//         let queryParams = [];
-
-//         if (month && year) {
-//             whereClause = 'WHERE MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
-//             queryParams = [parseInt(month), parseInt(year)];
-//         } else if (month) {
-//             whereClause = 'WHERE MONTH(t.created_at) = ?';
-//             queryParams = [parseInt(month)];
-//         } else if (year) {
-//             whereClause = 'WHERE YEAR(t.created_at) = ?';
-//             queryParams = [parseInt(year)];
-//         }
-
-//         let sql = `
-//             SELECT 
-//                 YEAR(t.created_at) AS year, 
-//                 MONTHNAME(t.created_at) AS month, 
-//                 MONTH(t.created_at) AS month_number, 
-//                 COUNT(*) AS count
-//             FROM ats_applicant_trackings t
-//             ${whereClause}
-//             GROUP BY year, month, month_number
-//             ORDER BY year, month_number
-//         `;
-
-//         console.log('Application Trend Query:', sql, 'Params:', queryParams);
-//         const [trend] = await pool.execute(sql, queryParams);
-
-//         // Transform data into the desired format
-//         const result = {};
-//         trend.forEach(({ year, month, count }) => {
-//             if (!result[year]) {
-//                 result[year] = [];
-//             }
-//             result[year].push({ month, count });
-//         });
-
-//         // Fetch total applications count with the same filters
-//         const totalSql = `SELECT COUNT(*) AS total FROM ats_applicant_trackings t ${whereClause}`;
-//         console.log('Application Trend Total Query:', totalSql, 'Params:', queryParams);
-
-//         const [[{ total }]] = await pool.execute(totalSql, queryParams);
-
-//         res.status(200).json({
-//             message: "okay",
-//             filters: {
-//                 month: month || null,
-//                 year: year || null
-//             },
-//             data: { total, trend: result }
-//         });
-//     } catch (error) {
-//         console.error("Error in applicationTrend:", error);
-//         res.status(500).json({ message: "Internal Server Error" });
-//     }
-// };
-
-
 exports.applicationTrend = async (req, res) => {
     try {
         const { month, year, position_id } = req.query;
@@ -227,15 +164,13 @@ exports.applicationTrend = async (req, res) => {
         let orderBy = '';
 
         if (year && month) {
-            // Group by day
+            // Group by full date
             selectFields = `
-                YEAR(t.created_at) AS year,
-                MONTH(t.created_at) AS month_number,
-                DAY(t.created_at) AS day,
+                DATE(t.created_at) AS date,
                 COUNT(*) AS count
             `;
-            groupBy = `GROUP BY year, month_number, day`;
-            orderBy = `ORDER BY year, month_number, day`;
+            groupBy = `GROUP BY date`;
+            orderBy = `ORDER BY date`;
         } else {
             // Group by month
             selectFields = `
@@ -262,16 +197,17 @@ exports.applicationTrend = async (req, res) => {
         const result = {};
 
         trend.forEach(row => {
-            const yearKey = row.year;
-            if (!result[yearKey]) {
-                result[yearKey] = [];
-            }
-
-            if (row.day !== undefined) {
-                // Daily trend
-                result[yearKey].push({ day: row.day, count: row.count });
+            if (row.date) {
+                const formattedDate = new Date(row.date).toISOString().slice(0, 10); // YYYY-MM-DD
+                if (!result[formattedDate]) {
+                    result[formattedDate] = 0;
+                }
+                result[formattedDate] += row.count;
             } else {
-                // Monthly trend
+                const yearKey = row.year;
+                if (!result[yearKey]) {
+                    result[yearKey] = [];
+                }
                 result[yearKey].push({ month: row.month, count: row.count });
             }
         });
@@ -296,7 +232,6 @@ exports.applicationTrend = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
-
 
 
 exports.applicantSources = async (req, res) => {
