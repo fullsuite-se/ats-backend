@@ -1,184 +1,185 @@
 const pool = require("../../config/db");
 
-const f_applicationsReceived = async (month, year) => {
+const f_applicationsReceived = async (month, year, position_id) => {
     try {
         let whereClause = '';
         let params = [];
 
-        if (month && year) {
-            whereClause = 'WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?';
-            params = [parseInt(month), parseInt(year)];
-        } else if (month) {
-            whereClause = 'WHERE MONTH(created_at) = ?';
-            params = [parseInt(month)];
-        } else if (year) {
-            whereClause = 'WHERE YEAR(created_at) = ?';
-            params = [parseInt(year)];
+        if (month || year || position_id) {
+            const conditions = [];
+
+            if (month) {
+                conditions.push('MONTH(t.created_at) = ?');
+                params.push(parseInt(month));
+            }
+            if (year) {
+                conditions.push('YEAR(t.created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('t.position_id = ?');
+                params.push(position_id);
+            }
+
+            whereClause = "WHERE " + conditions.join(" AND ")
         }
 
-        const totalQuery = `SELECT COUNT(*) AS total_applications FROM ats_applicant_trackings ${whereClause}`;
 
+        const totalQuery = `SELECT COUNT(*) AS count 
+                            FROM ats_applicant_trackings t
+                            ${whereClause}`;
 
         const [overall] = await pool.execute(totalQuery, params);
-
-        // For breakdown, we keep the 3-month window but can additionally filter by month/year
-        let breakdownQuery = `
-            SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count 
-            FROM ats_applicant_trackings 
-            WHERE created_at >= (
-                SELECT MAX(created_at) FROM ats_applicant_trackings
-            ) - INTERVAL 3 MONTH`;
-
-        // Add month/year filter if provided
-        if (month && year) {
-            breakdownQuery += ` AND MONTH(created_at) = ? AND YEAR(created_at) = ?`;
-        } else if (month) {
-            breakdownQuery += ` AND MONTH(created_at) = ?`;
-        } else if (year) {
-            breakdownQuery += ` AND YEAR(created_at) = ?`;
-        }
-
-        breakdownQuery += ` GROUP BY month ORDER BY month DESC`;
-
-
-        const [breakdown] = await pool.execute(breakdownQuery, params);
-
-        // For all months count, apply the same filtering
-        let allCountQuery = `
-            SELECT DATE_FORMAT(created_at, '%m') AS month, COUNT(*) AS count 
-            FROM ats_applicant_trackings`;
-
-        if (whereClause) {
-            allCountQuery += ` ${whereClause}`;
-        }
-
-        allCountQuery += ` GROUP BY month ORDER BY month DESC`;
-
-
-        const [allCountPerMonth] = await pool.execute(allCountQuery, params);
-
-        return {
-            total: overall[0].total_applications,
-            breakdown: breakdown,
-            allCountPerMonth: allCountPerMonth
-        };
+        return overall[0].count;
     } catch (error) {
         console.error(error);
         return null;
     }
 };
 
-const f_topJobs = async (month, year) => {
+
+//not priority. may have bugs.
+const f_topJobs = async (month, year, position_id) => {
     try {
-        let whereClause = 'WHERE ';
+        let whereClause = '';
         let params = [];
 
-        if (month && year) {
-            whereClause += 'MONTH(a.created_at) = ? AND YEAR(a.created_at) = ?';
-            params = [parseInt(month), parseInt(year)];
-        } else if (month) {
-            whereClause += 'MONTH(a.created_at) = ?';
-            params = [parseInt(month)];
-        } else if (year) {
-            whereClause += 'YEAR(a.created_at) = ?';
-            params = [parseInt(year)];
+        // Build dynamic WHERE conditions
+        if (month || year || position_id) {
+            const conditions = [];
+
+            if (month) {
+                conditions.push('MONTH(t.created_at) = ?');
+                params.push(parseInt(month));
+            }
+            if (year) {
+                conditions.push('YEAR(t.created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('t.position_id = ?');
+                params.push(position_id);
+            }
+
+            whereClause = "WHERE " + conditions.join(" AND ");
         }
 
-        // Get total number of hires with filtering
-        const totalHiresQuery = `
-            SELECT COUNT(*) AS totalHires
-            FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
-            ${whereClause}
-        `;
+        // Get total number of applications received
+        const applicationsReceived = await f_applicationsReceived(month, year, position_id);
 
+        // If no applications, avoid division by zero
+        if (!applicationsReceived || applicationsReceived === 0) {
+            return { title: null, count: 0, total_applicant: 0, percentage: '0%' };
+        }
 
-        const [[{ totalHires }]] = await pool.execute(totalHiresQuery, params);
-
-        // Top jobs query
-        const topJobsQuery = `
-            SELECT j.title, COUNT(a.applicant_id) AS hires
-            FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
+        // Top jobs query - fix JOIN issue
+        const applicationCountPerPosition = `
+            SELECT j.title, COUNT(t.applicant_id) AS count
+            FROM ats_applicant_trackings t
+            JOIN sl_company_jobs j ON t.position_id = j.job_id
             ${whereClause}
             GROUP BY j.title
-            ORDER BY hires DESC
-            LIMIT 4
+            ORDER BY count DESC
+            LIMIT 1
         `;
 
+        const [topJobs] = await pool.execute(applicationCountPerPosition, params);
 
-        const [topJobs] = await pool.execute(topJobsQuery, params);
+        // If no top job found
+        if (!topJobs || topJobs.length === 0) {
+            return { title: null, count: 0, total_applicant: applicationsReceived, percentage: '0%' };
+        }
 
-        // All jobs query
-        const allJobsQuery = `
-            SELECT j.title, COUNT(a.applicant_id) AS hires
-            FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
-            ${whereClause}
-            GROUP BY j.title
-            ORDER BY hires DESC
-        `;
-
-        const [allJobs] = await pool.execute(allJobsQuery, params);
+        const topJob = topJobs[0];
 
         return {
-            formattedTopJobs: topJobs.map(job => ({
-                title: job.title,
-                hires: job.hires,
-                percentage: totalHires
-                    ? ((job.hires / totalHires) * 100).toFixed(2) + '%'
-                    : '0%'
-            })),
-            formattedAllJobs: allJobs.map(job => ({
-                title: job.title,
-                hires: job.hires,
-                percentage: totalHires
-                    ? ((job.hires / totalHires) * 100).toFixed(2) + '%'
-                    : '0%'
-            }))
+            title: topJob.title,
+            count: topJob.count,
+            total_applicant: applicationsReceived,
+            percentage: ((topJob.count / applicationsReceived) * 100).toFixed(2) + '%'
         };
+
     } catch (error) {
         console.error('Error fetching top jobs:', error);
         return null;
     }
 };
 
-const f_InternalExternalHires = async (month, year) => {
+//calculates the total hires (job offer accepted);
+const f_totalHires = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE p.status = \'JOB_OFFER_ACCEPTED\'';
         let params = [];
 
-        if (month && year) {
-            whereClause += ' AND MONTH(a.created_at) = ? AND YEAR(a.created_at) = ?';
-            params = [parseInt(month), parseInt(year)];
-        } else if (month) {
-            whereClause += ' AND MONTH(a.created_at) = ?';
-            params = [parseInt(month)];
-        } else if (year) {
-            whereClause += ' AND YEAR(a.created_at) = ?';
-            params = [parseInt(year)];
+        if (month || year || position_id) {
+            const conditions = [];
+
+            if (month) {
+                conditions.push('MONTH(t.created_at) = ?');
+                params.push(parseInt(month));
+            }
+            if (year) {
+                conditions.push('YEAR(t.created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('t.position_id = ?');
+                params.push(position_id);
+            }
+
+            whereClause = whereClause + " AND " + conditions.join(" AND ")
         }
 
         const totalHiresQuery = `
             SELECT COUNT(*) AS totalHires 
-            FROM ats_applicant_trackings a 
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
+            FROM ats_applicant_trackings t 
+            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
             ${whereClause}`;
 
         const [[{ totalHires }]] = await pool.execute(totalHiresQuery, params);
+        return totalHires;
+    } catch (error) {
+        console.error('Error fetching top jobs:', error);
+        return null;
+    }
+}
+//not priority. may have bugs.
+const f_InternalExternalHires = async (month, year, position_id) => {
+    try {
+        let whereClause = 'WHERE p.status = \'JOB_OFFER_ACCEPTED\'';
+        let params = [];
+
+        if (month || year || position_id) {
+            const conditions = [];
+
+            if (month) {
+                conditions.push('MONTH(t.created_at) = ?');
+                params.push(parseInt(month));
+            }
+            if (year) {
+                conditions.push('YEAR(t.created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('t.position_id = ?');
+                params.push(position_id);
+            }
+
+            whereClause = whereClause + conditions.join(" AND ")
+        }
+
+        const totalHires = await f_totalHires(month, year, position_id);
+
 
         const internalQuery = `
             SELECT COUNT(*) AS internal_hires 
-            FROM ats_applicant_trackings a 
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
+            FROM ats_applicant_trackings t 
+            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
             ${whereClause} 
-            AND a.applied_source IN ('Referral', 'Internship')`;
+            AND t.applied_source IN ('REFERRAL', 'INTERNSHIP')`;
 
         console.log(internalQuery);
-        
+
         const [internal] = await pool.execute(internalQuery, params);
 
         const externalQuery = `
@@ -186,33 +187,17 @@ const f_InternalExternalHires = async (month, year) => {
             FROM ats_applicant_trackings a 
             JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
             ${whereClause} 
-            AND a.applied_source IN ('Indeed', 'LinkedIn', 'Social Media', 'Suitelife', 'Career Fair')`;
+            AND a.applied_source NOT IN ('REFERRAL', 'INTERNSHIP')`;
 
 
         const [external] = await pool.execute(externalQuery, params);
-
-        // Source breakdown query
-        const breakdownQuery = `
-            SELECT a.applied_source, COUNT(*) AS count
-            FROM ats_applicant_trackings a 
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
-            ${whereClause}
-            GROUP BY a.applied_source`;
-
-
-        const [breakdown] = await pool.execute(breakdownQuery, params);
 
         return {
             internal: internal[0].internal_hires,
             external: external[0].external_hires,
             internalRate: totalHires ? (internal[0].internal_hires / totalHires) * 100 : 0,
             externalRate: totalHires ? (external[0].external_hires / totalHires) * 100 : 0,
-            totalHires: totalHires,
-            breakdown: breakdown.map(row => ({
-                applied_source: row.applied_source,
-                count: row.count,
-                rate: totalHires ? (row.count / totalHires) * 100 : 0,
-            }))
+
         };
     } catch (error) {
         console.error(error);
@@ -220,98 +205,50 @@ const f_InternalExternalHires = async (month, year) => {
     }
 };
 
-const f_dropOffRate = async (month, year) => {
+
+const f_dropOffRate = async (month, year, position_id) => {
     try {
-        let whereClause = '';
-        let progressWhereClause = 'WHERE status IN (\'WITHDREW_APPLICATION\', \'JOB_OFFER_REJECTED\', \'BLACKLISTED\', \'NOT_FIT\')';
+        let whereClause = `WHERE p.status IN ( 'JOB_OFFER_REJECTED', 'WITHDREW_APPLICATION', 'GHOSTED', 'BLACKLISTED', 'NOT_FIT')`;
         let params = [];
-        let progressParams = [];
 
-        if (month && year) {
-            whereClause = 'WHERE MONTH(created_at) = ? AND YEAR(created_at) = ?';
-            progressWhereClause += ' AND MONTH(updated_at) = ? AND YEAR(updated_at) = ?';
-            params = [parseInt(month), parseInt(year)];
-            progressParams = [parseInt(month), parseInt(year)];
-        } else if (month) {
-            whereClause = 'WHERE MONTH(created_at) = ?';
-            progressWhereClause += ' AND MONTH(updated_at) = ?';
-            params = [parseInt(month)];
-            progressParams = [parseInt(month)];
-        } else if (year) {
-            whereClause = 'WHERE YEAR(created_at) = ?';
-            progressWhereClause += ' AND YEAR(updated_at) = ?';
-            params = [parseInt(year)];
-            progressParams = [parseInt(year)];
-        }
+        if (month || year || position_id) {
+            const conditions = [];
 
-        // Get total number of applicants with filtering
-        const totalApplicantsQuery = `SELECT COUNT(*) AS totalApplicants FROM ats_applicant_trackings ${whereClause}`;
+            if (month) {
+                conditions.push('MONTH(t.created_at) = ?');
+                params.push(parseInt(month));
+            }
 
+            if (year) {
+                conditions.push('YEAR(t.created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('t.position_id = ?');
+                params.push(position_id);
+            }
 
-        const [[{ totalApplicants }]] = await pool.execute(totalApplicantsQuery, params);
-
-        if (totalApplicants === 0) {
-            return {
-                overallDropOffRate: '0%',
-                monthlyDropOffs: [],
-                allMonthlyDropOffs: []
-            };
+            whereClause = whereClause + " AND " + conditions.join(" AND ")
         }
 
         // Get drop-offs with filtering
-        let dropOffsQuery = `
+        let sql = `
             SELECT COUNT(*) AS totalDropOffs 
-            FROM ats_applicant_trackings a
-            JOIN sl_company_jobs j ON a.position_id = j.job_id
-            JOIN ats_applicant_progress p ON a.progress_id = p.progress_id
-            WHERE p.status IN ('WITHDREW_APPLICATION', 'JOB_OFFER_REJECTED', 'BLACKLISTED', 'NOT_FIT')`;
+            FROM ats_applicant_trackings t
+            JOIN sl_company_jobs j ON t.position_id = j.job_id
+            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+            ${whereClause}
+            `;
 
-        if (month && year) {
-            dropOffsQuery += ' AND MONTH(a.created_at) = ? AND YEAR(a.created_at) = ?';
-        } else if (month) {
-            dropOffsQuery += ' AND MONTH(a.created_at) = ?';
-        } else if (year) {
-            dropOffsQuery += ' AND YEAR(a.created_at) = ?';
-        }
+        const [[{ totalDropOffs }]] = await pool.execute(sql, params);
 
-        const [[{ totalDropOffs }]] = await pool.execute(dropOffsQuery, params);
+        const applicantReceived = await f_applicationsReceived(month, year, position_id);
 
-        // Monthly drop-offs for last 3 months
-        let monthlyQuery = `
-            SELECT DATE_FORMAT(updated_at, '%Y-%m') AS month, COUNT(*) AS count
-            FROM ats_applicant_progress 
-            ${progressWhereClause}
-            AND updated_at >= (
-                SELECT MAX(updated_at) FROM ats_applicant_trackings
-            ) - INTERVAL 3 MONTH
-            GROUP BY month
-            ORDER BY month DESC`;
+        return applicantReceived > 0
+            ? ((totalDropOffs / applicantReceived) * 100).toFixed(2) + '%'
+            : '0.00%';
 
 
-        const [monthlyDropOffs] = await pool.execute(monthlyQuery, progressParams);
-
-        // All monthly drop-offs
-        let allMonthlyQuery = `
-            SELECT DATE_FORMAT(updated_at, '%Y-%m') AS month, COUNT(*) AS count
-            FROM ats_applicant_progress 
-            ${progressWhereClause}
-            GROUP BY month
-            ORDER BY month DESC`;
-
-
-        const [allMonthlyDropOffs] = await pool.execute(allMonthlyQuery, progressParams);
-        
-        return {
-            overallDropOffRate: ((totalDropOffs / totalApplicants) * 100).toFixed(2) + '%',
-            monthlyDropOffs: monthlyDropOffs.map(row => ({
-                month: row.month,
-                dropOffRate: ((row.count / totalApplicants) * 100).toFixed(2) + '%'
-            })),
-            allMonthlyDropOffs: allMonthlyDropOffs.map(row => ({
-                month: row.month,
-                dropOffRate: ((row.count / totalApplicants) * 100).toFixed(2) + '%'
-            }))
-        };
     } catch (error) {
         console.error('Error fetching drop-off rate:', error);
         return null;
@@ -319,37 +256,40 @@ const f_dropOffRate = async (month, year) => {
 };
 
 // analytic/metrics
-const f_reasonForBlacklisted = async (month, year) => {
+const f_reasonForBlacklisted = async (month, year, position_id) => {
     try {
-        let whereClause = 'WHERE reason IS NOT NULL';
-        const params = [];
-        const subqueryParams = []
-
-        if (month && year) {
-            whereClause += ' AND MONTH(updated_at) = ? AND YEAR(updated_at) = ?';
-            params.push(parseInt(month), parseInt(year));
-            subqueryParams.push(parseInt(month), parseInt(year));
-        } else if (month) {
-            whereClause += ' AND MONTH(updated_at) = ?';
-            params.push(parseInt(month));
-            subqueryParams.push(parseInt(month));
-        } else if (year) {
-            whereClause += ' AND YEAR(updated_at) = ?';
-            params.push(parseInt(year));
-            subqueryParams.push(parseInt(year));
-        }
-
         const sql = `
             SELECT 
-                reason AS blacklisted_reason,
-                COUNT(reason) AS count,
-                IFNULL(COUNT(reason) * 1.0 / (SELECT COUNT(*) FROM ats_applicant_progress ${whereClause}), 0) * 100 AS percentage
-            FROM ats_applicant_progress
-            ${whereClause}
-            GROUP BY reason
+                p.reason AS blacklisted_reason,
+                COUNT(p.reason) AS count,
+                IFNULL(COUNT(p.reason) * 1.0 / (
+                    SELECT COUNT(*) 
+                    FROM ats_applicant_trackings t_sub 
+                    JOIN ats_applicant_progress p_sub ON t_sub.progress_id = p_sub.progress_id
+                    WHERE p_sub.reason IS NOT NULL
+                    ${month ? ' AND MONTH(t_sub.created_at) = ?' : ''}
+                    ${year ? ' AND YEAR(t_sub.created_at) = ?' : ''}
+                    ${position_id ? ' AND t_sub.position_id = ?' : ''}
+                ), 0) * 100 AS percentage
+            FROM ats_applicant_trackings t 
+            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+            WHERE p.reason IS NOT NULL
+            ${month ? ' AND MONTH(t.created_at) = ?' : ''}
+            ${year ? ' AND YEAR(t.created_at) = ?' : ''}
+            ${position_id ? ' AND t.position_id = ?' : ''}
+            GROUP BY p.reason
         `;
 
-        const [results] = await pool.execute(sql, [...params, ...subqueryParams]);
+        const queryParams = [
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : []),
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : [])
+        ];
+
+        const [results] = await pool.execute(sql, queryParams);
 
         return results.map(row => ({
             reason: row.blacklisted_reason,
@@ -361,57 +301,54 @@ const f_reasonForBlacklisted = async (month, year) => {
         return null;
     }
 };
+
 // analytic/metrics
-const f_reasonForRejection = async (month, year) => {
+const f_reasonForRejection = async (month, year, position_id) => {
     try {
-        let whereClause = 'WHERE reason_for_rejection IS NOT NULL';
-        const params = [];
-        const subqueryParams = [];
-
-        if (month && year) {
-            whereClause += ' AND MONTH(updated_at) = ? AND YEAR(updated_at) = ?';
-            params.push(parseInt(month), parseInt(year));
-            subqueryParams.push(parseInt(month), parseInt(year));
-        } else if (month) {
-            whereClause += ' AND MONTH(updated_at) = ?';
-            params.push(parseInt(month));
-            subqueryParams.push(parseInt(month));
-        } else if (year) {
-            whereClause += ' AND YEAR(updated_at) = ?';
-            params.push(parseInt(year));
-            subqueryParams.push(parseInt(year));
-        }
-
         const sql = `
             SELECT 
-                reason_for_rejection AS rejection_reason,
-                COUNT(reason_for_rejection) AS count,
-                IFNULL(
-                    COUNT(reason_for_rejection) * 1.0 / (
-                        SELECT COUNT(*) 
-                        FROM ats_applicant_progress 
-                        WHERE reason_for_rejection IS NOT NULL
-                        ${month || year ? ' AND ' + whereClause.replace('WHERE ', '') : ''}
-                    ), 
-                    0
-                ) * 100 AS percentage
-            FROM ats_applicant_progress
-            ${whereClause}
-            GROUP BY reason_for_rejection
+                p.reason_for_rejection,
+                COUNT(p.reason_for_rejection) AS count,
+                IFNULL(COUNT(p.reason_for_rejection) * 1.0 / (
+                    SELECT COUNT(*) 
+                    FROM ats_applicant_trackings t_sub 
+                    JOIN ats_applicant_progress p_sub ON t_sub.progress_id = p_sub.progress_id
+                    WHERE p_sub.reason_for_rejection IS NOT NULL
+                    ${month ? ' AND MONTH(t_sub.created_at) = ?' : ''}
+                    ${year ? ' AND YEAR(t_sub.created_at) = ?' : ''}
+                    ${position_id ? ' AND t_sub.position_id = ?' : ''}
+                ), 0) * 100 AS percentage
+            FROM ats_applicant_trackings t 
+            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+            WHERE p.reason_for_rejection IS NOT NULL
+            ${month ? ' AND MONTH(t.created_at) = ?' : ''}
+            ${year ? ' AND YEAR(t.created_at) = ?' : ''}
+            ${position_id ? ' AND t.position_id = ?' : ''}
+            GROUP BY p.reason_for_rejection
         `;
 
-        const [results] = await pool.execute(sql, [...params, ...subqueryParams]);
+        const queryParams = [
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : []),
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : [])
+        ];
+
+        const [results] = await pool.execute(sql, queryParams);
 
         return results.map(row => ({
-            reason: row.rejection_reason,
+            reason: row.reason_for_rejection,
             count: row.count,
             percentage: parseFloat(row.percentage).toFixed(2) + '%'
         }));
     } catch (error) {
-        console.error('Error fetching rejection reasons:', error);
+        console.error('Error fetching blacklist reasons:', error);
         return null;
     }
 };
+
 
 module.exports = {
     f_applicationsReceived,
