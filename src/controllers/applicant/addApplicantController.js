@@ -220,6 +220,7 @@ exports.addApplicant = async (req, res) => {
     return res
       .status(201)
       .json({ message: "Successfully inserted", applicant_id });
+
   } catch (error) {
     console.error("Error processing applicant:", error);
     res

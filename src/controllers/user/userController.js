@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
-
+const userModel = require("../../models/user/userModel");
 const getUserInfoSQL = `
     SELECT
         hris_user_accounts.user_id, 
@@ -12,10 +12,12 @@ const getUserInfoSQL = `
         hris_user_infos.last_name, 
         hris_user_infos.user_pic, 
         hris_user_designations.company_id,
+          company_job_titles.job_title,
         JSON_OBJECTAGG(service_features.service_feature_id, service_features.feature_name) AS feature_names
     FROM hris_user_accounts
     LEFT JOIN hris_user_infos ON hris_user_accounts.user_id = hris_user_infos.user_id
     LEFT JOIN hris_user_designations ON hris_user_infos.user_id = hris_user_designations.user_id
+       LEFT JOIN company_job_titles ON hris_user_designations.job_title_id = company_job_titles.job_title_id -- Join with job titles
     LEFT JOIN hris_user_access_permissions ON hris_user_accounts.user_id = hris_user_access_permissions.user_id
     LEFT JOIN service_features ON hris_user_access_permissions.service_feature_id = service_features.service_feature_id
     WHERE hris_user_accounts.user_id = ?
@@ -25,7 +27,8 @@ const getUserInfoSQL = `
         hris_user_infos.middle_name, 
         hris_user_infos.last_name, 
         hris_user_infos.user_pic,
-        hris_user_designations.company_id
+        hris_user_designations.company_id,
+        company_job_titles.job_title 
 `;
 
 exports.getUserInfo = async (req, res) => {
@@ -47,6 +50,7 @@ exports.getUserInfo = async (req, res) => {
 };
 
 exports.getAllUserAccounts = async (req, res) => {
+
     const sql = `
         SELECT 
             u.user_id, 
@@ -73,7 +77,9 @@ exports.getAllUserAccounts = async (req, res) => {
                 SELECT JSON_ARRAYAGG(
                     JSON_OBJECT(
                         'service_feature_id', sf.service_feature_id,
-                        'feature_name', sf.feature_name
+                        'feature_name', sf.feature_name,
+                        'description', sf.description,
+                        'category', sf.category
                     )
                 ) AS service_features
                 FROM hris_user_access_permissions uap
@@ -86,16 +92,14 @@ exports.getAllUserAccounts = async (req, res) => {
     `;
 
     try {
-        const [results] = await pool.execute(sql);
+        const results = await userModel.getAllUserAccounts();
 
-        // Parse the JSON string for service_features if it exists
         const parsedResults = results.map(user => {
             let serviceFeatures = [];
             try {
-                if (typeof user.service_features === 'string') {
+                if (typeof user.service_features === "string") {
                     serviceFeatures = JSON.parse(user.service_features);
-                } else if (typeof user.service_features === 'object') {
-                    // Handle cases where the database returns an object instead of a JSON string
+                } else if (typeof user.service_features === "object") {
                     serviceFeatures = user.service_features;
                 }
             } catch (err) {
@@ -104,13 +108,13 @@ exports.getAllUserAccounts = async (req, res) => {
 
             return {
                 ...user,
-                service_features: serviceFeatures || [] // Default to an empty array if parsing fails
+                service_features: serviceFeatures || []
             };
         });
 
-        return res.status(200).json({ 
-            message: "User accounts retrieved", 
-            userAccounts: parsedResults 
+        return res.status(200).json({
+            message: "User accounts retrieved",
+            userAccounts: parsedResults
         });
     } catch (error) {
         console.error("Error fetching user accounts:", error);
@@ -129,8 +133,8 @@ exports.updateUserAccount = async (req, res) => {
         console.log("USER ID:", user_id);
         console.log("JOB TITLE ID:", data.job_title_id); // Log job_title_id
 
-        const hashedPassword = data.user_password 
-            ? await bcrypt.hash(data.user_password, 10) 
+        const hashedPassword = data.user_password
+            ? await bcrypt.hash(data.user_password, 10)
             : null;
 
         console.log("HASHED PASSWORD:", hashedPassword);
@@ -142,8 +146,8 @@ exports.updateUserAccount = async (req, res) => {
             SET ${setClause}
             WHERE user_id = ?
         `;
-        const userAccountValues = hashedPassword 
-            ? [data.user_email, hashedPassword, user_id] 
+        const userAccountValues = hashedPassword
+            ? [data.user_email, hashedPassword, user_id]
             : [data.user_email, user_id];
 
         console.log("UPDATE USER ACCOUNT SQL:", updateUserAccountSQL);
