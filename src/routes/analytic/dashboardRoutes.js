@@ -11,6 +11,9 @@ router.get('/status-distribution', dashboardController.getApplicantStatusDistrib
 // Applicant source distribution
 router.get('/source-distribution', dashboardController.getApplicantSourceDistribution);
 
+// Application source distribution
+router.get('/application-source', dashboardController.getApplicationSourceDistribution);
+
 // Job position analytics
 router.get('/job-positions', dashboardController.getJobPositionAnalytics);
 
@@ -26,7 +29,5 @@ router.get('/interview-schedule', dashboardController.getInterviewScheduleAnalyt
 // Hiring funnel metrics
 router.get('/hiring-funnel', dashboardController.getHiringFunnelMetrics);
 
-// Time to hire metrics
-router.get('/time-to-hire', dashboardController.getTimeToHireMetrics);
 
 module.exports = router;

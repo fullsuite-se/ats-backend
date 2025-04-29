@@ -204,6 +204,65 @@ exports.getApplicantSourceDistribution = async (req, res) => {
     }
 };
 
+
+exports.getApplicationSourceDistribution = async (req, res) => {
+    try {
+        const { company_id, month, year } = req.query;
+
+        let applicationSourceQuery;
+        let queryParams = [];
+        let dateFilter = '';
+
+        // Build date filter
+        if (month && year) {
+            dateFilter = 'AND MONTH(created_at) = ? AND YEAR(t.created_at) = ?';
+        } else if (month) {
+            dateFilter = 'AND MONTH(created_at) = ?';
+        } else if (year) {
+            dateFilter = 'AND YEAR(created_at) = ?';
+        }
+
+        if (company_id) {
+            applicationSourceQuery = `
+                SELECT applied_source, COUNT(*) as count
+                FROM ats_applicant_trackings
+                WHERE company_id = ? ${dateFilter}
+                GROUP BY applied_source
+                ORDER BY count DESC
+            `
+            queryParams = [company_id];
+            
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
+        }
+        else {
+            applicationSourceQuery = `
+                SELECT applied_source, COUNT(*) as count
+                FROM ats_applicant_trackings
+                WHERE 1=1 ${dateFilter}
+                GROUP BY applied_source
+                ORDER BY count DESC
+            `
+            if (month && year) queryParams.push(parseInt(month), parseInt(year));
+            else if (month) queryParams.push(parseInt(month));
+            else if (year) queryParams.push(parseInt(year));
+        }
+
+        const [ApplicationSourceDistribution] = await pool.execute(applicationSourceQuery, queryParams);
+
+        res.status(200).json({
+            success: true,
+            data: ApplicationSourceDistribution
+        });
+    }
+    catch (error) {
+        console.error("Error fetching applicant source distribution:", error.message);
+        res.status(500).json({ message: "Failed to fetch applicant source distribution" });
+    }
+}
+
+
 /**
  * Get job position analytics with month/year filtering
  */
@@ -470,16 +529,32 @@ exports.getHiringFunnelMetrics = async (req, res) => {
         const { company_id, position_id, date_from, date_to, month, year } = req.query;
 
         let hiringFunnelQuery = `
-      SELECT 
-        COUNT(*) AS total_applications,
-        SUM(CASE WHEN p.stage = 'PRE_SCREENING' THEN 1 ELSE 0 END) AS pre_screening,
-        SUM(CASE WHEN p.stage = 'INTERVIEW_SCHEDULE' THEN 1 ELSE 0 END) AS interview_stage,
-        SUM(CASE WHEN p.stage = 'JOB_OFFER' AND p.status != 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) AS job_offer_stage,
-        SUM(CASE WHEN p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) AS hired
-      FROM ats_applicant_trackings t
-      JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-      WHERE 1=1
-    `;
+            SELECT 
+                COUNT(*) AS total_applications,
+                SUM(CASE WHEN p.status = 'UNPROCESSED' THEN 1 ELSE 0 END) AS unprocessed,
+                SUM(CASE WHEN p.status = 'PRE_SCREENING' THEN 1 ELSE 0 END) AS pre_screening,
+                SUM(CASE WHEN p.status = 'TEST_SENT' THEN 1 ELSE 0 END) AS test_sent,
+                SUM(CASE WHEN p.status = 'INTERVIEW_SCHEDULE_SENT' THEN 1 ELSE 0 END) AS interview_schedule_sent,
+                SUM(CASE WHEN p.status = 'PHONE_INTERVIEW' THEN 1 ELSE 0 END) AS phone_interview,
+                SUM(CASE WHEN p.status = 'FIRST_INTERVIEW' THEN 1 ELSE 0 END) AS first_interview,
+                SUM(CASE WHEN p.status = 'SECOND_INTERVIEW' THEN 1 ELSE 0 END) AS second_interview,
+                SUM(CASE WHEN p.status = 'THIRD_INTERVIEW' THEN 1 ELSE 0 END) AS third_interview,
+                SUM(CASE WHEN p.status = 'FOURTH_INTERVIEW' THEN 1 ELSE 0 END) AS fourth_interview,
+                SUM(CASE WHEN p.status = 'FOLLOW_UP_INTERVIEW' THEN 1 ELSE 0 END) AS follow_up_interview,
+                SUM(CASE WHEN p.status = 'FINAL_INTERVIEW' THEN 1 ELSE 0 END) AS final_interview,
+                SUM(CASE WHEN p.status = 'FOR_DECISION_MAKING' THEN 1 ELSE 0 END) AS for_decision_making,
+                SUM(CASE WHEN p.status = 'FOR_JOB_OFFER' THEN 1 ELSE 0 END) AS for_job_offer,
+                SUM(CASE WHEN p.status = 'JOB_OFFER_REJECTED' THEN 1 ELSE 0 END) AS job_offer_rejected,
+                SUM(CASE WHEN p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) AS job_offer_accepted,
+                SUM(CASE WHEN p.status = 'FOR_FUTURE_POOLING' THEN 1 ELSE 0 END) AS for_future_pooling,
+                SUM(CASE WHEN p.status = 'WITHDREW_APPLICATION' THEN 1 ELSE 0 END) AS withdrew_application,
+                SUM(CASE WHEN p.status = 'BLACKLISTED' THEN 1 ELSE 0 END) AS blacklisted,
+                SUM(CASE WHEN p.status = 'GHOSTED' THEN 1 ELSE 0 END) AS ghosted,
+                SUM(CASE WHEN p.status = 'NOT_FIT' THEN 1 ELSE 0 END) AS not_fit
+            FROM ats_applicant_trackings t
+            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+            WHERE 1=1
+        `;
 
         let queryParams = [];
 
@@ -502,7 +577,7 @@ exports.getHiringFunnelMetrics = async (req, res) => {
             hiringFunnelQuery += " AND t.created_at <= ?";
             queryParams.push(date_to);
         }
-        
+
         // Alternative month/year filtering if date range not provided
         if (!date_from && !date_to) {
             if (month && year) {
@@ -529,65 +604,6 @@ exports.getHiringFunnelMetrics = async (req, res) => {
     }
 };
 
-/**
- * Get time-to-hire metrics with month/year filtering
- */
-exports.getTimeToHireMetrics = async (req, res) => {
-    try {
-        const { company_id, position_id, month, year } = req.query;
-
-        let timeToHireQuery = `
-      SELECT 
-        j.job_id,
-        j.title,
-        AVG(DATEDIFF(
-          (SELECT MAX(changed_at) FROM ats_applicant_status_history 
-           WHERE progress_id = t.progress_id AND new_status = 'JOB_OFFER_ACCEPTED'), 
-          t.created_at
-        )) AS avg_days_to_hire
-      FROM ats_applicant_trackings t
-      JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-      JOIN sl_company_jobs j ON t.position_id = j.job_id
-      WHERE p.status = 'JOB_OFFER_ACCEPTED'
-    `;
-
-        let queryParams = [];
-
-        if (company_id) {
-            timeToHireQuery += " AND t.company_id = ?";
-            queryParams.push(company_id);
-        }
-
-        if (position_id) {
-            timeToHireQuery += " AND t.position_id = ?";
-            queryParams.push(position_id);
-        }
-        
-        // Add month/year filtering
-        if (month && year) {
-            timeToHireQuery += " AND MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?";
-            queryParams.push(parseInt(month), parseInt(year));
-        } else if (month) {
-            timeToHireQuery += " AND MONTH(t.created_at) = ?";
-            queryParams.push(parseInt(month));
-        } else if (year) {
-            timeToHireQuery += " AND YEAR(t.created_at) = ?";
-            queryParams.push(parseInt(year));
-        }
-
-        timeToHireQuery += " GROUP BY j.job_id, j.title";
-
-        const [timeToHireData] = await pool.execute(timeToHireQuery, queryParams);
-
-        res.status(200).json({
-            success: true,
-            data: timeToHireData
-        });
-    } catch (error) {
-        console.error("Error fetching time-to-hire metrics:", error.message);
-        res.status(500).json({ message: "Failed to fetch time-to-hire metrics" });
-    }
-};
 
 /**
  * Get monthly applicant trends with month/year filtering

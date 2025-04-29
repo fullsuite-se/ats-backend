@@ -93,7 +93,7 @@ exports.uploadCVGdrive = async (req, res) => {
         if (req.body.company_id) {
             // if req.company_id is present, it comes from the ATS. 
             // So use the company_id of the user log in to the ATS.
-           company_id = req.company_id; 
+           company_id = req.body.company_id; 
         }
 
         

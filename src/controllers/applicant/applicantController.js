@@ -9,8 +9,6 @@ exports.searchApplicant = async (req, res) => {
     const conditions = [];
     const values = [];
 
-    console.log(filters);
-
     if (filters.month) {
       conditions.push("MONTHNAME(a.date_created) = ?");
       values.push(filters.month);
@@ -28,6 +26,7 @@ exports.searchApplicant = async (req, res) => {
                 a.first_name LIKE ?
                  OR a.middle_name LIKE ? 
                  OR a.last_name LIKE ?
+                 OR CONCAT(a.first_name, ' ', a.last_name) LIKE ?
                  OR c.email_1 LIKE ?
                  OR c.email_2 LIKE ?
                  OR c.email_3 LIKE ?
@@ -35,6 +34,7 @@ exports.searchApplicant = async (req, res) => {
                  OR c.mobile_number_2 LIKE ? 
                  )`);
       values.push(
+        `%${filters.searchQuery}%`,
         `%${filters.searchQuery}%`,
         `%${filters.searchQuery}%`,
         `%${filters.searchQuery}%`,

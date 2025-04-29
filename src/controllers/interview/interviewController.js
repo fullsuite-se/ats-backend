@@ -2,16 +2,23 @@ const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
 const applicantModel = require("../../models/applicant/applicantModel");
 const interviewModel = require("../../models/interview/interviewModel");
+const slack = require("../../services/slack");
+
 // /interview - post
 exports.addInterview = async (req, res) => {
     try {
         const interview = req.body;
         const interview_id = uuidv4();
 
+        console.log(interview);
+
+
         let sql = `INSERT INTO ats_applicant_interviews (interview_id, tracking_id, interviewer_id, date_of_interview)
                      VALUES (?, ?, ?, ?)`;
         let values = [interview_id, interview.tracking_id, interview.interviewer_id, interview.date_of_interview];
         await pool.execute(sql, values);
+
+        await slack.messageBotInterview(interview.interviewer_id, interview.applicant_id);
 
         res.status(201).json({ message: "interview added" });
     } catch (error) {
@@ -79,6 +86,9 @@ exports.addNote = async (req, res) => {
         const values = [note_id, interview.interview_id, interview.note_type, interview.note_body, interview.noted_by];
 
         await pool.execute(sql, values);
+
+        await slack.messageBotNote(interview.slack_message, interview.interviewer_id, interview.applicant_id);
+
         res.status(201).json({ message: "interview note added" });
     } catch (error) {
         console.error(error);

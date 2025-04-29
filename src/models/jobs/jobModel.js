@@ -150,6 +150,7 @@ const Job = {
       JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id 
       WHERE title LIKE ?
     `;
+    
     const [rows] = await pool.query(query, [searchValue + "%"]);
     return rows;
   },

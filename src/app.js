@@ -20,7 +20,12 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 const CLIENT_ORIGIN_FS = process.env.CLIENT_ORIGIN_FS;
 app.use(
   cors({
-    origin: [CLIENT_ORIGIN, CLIENT_ORIGIN_FS, "http://localhost:5173", "http://192.168.88.244"],
+    origin: [
+      CLIENT_ORIGIN,
+      CLIENT_ORIGIN_FS,
+      "http://localhost:5173",
+      "http://192.168.88.244",
+    ],
     credentials: true,
   })
 );
@@ -37,7 +42,7 @@ const applicantRoutes = require("./routes/applicant/applicantRoutes");
 const addApplicantRoutes = require("./routes/applicant/addApplicantRoutes");
 const editApplicantRoutes = require("./routes/applicant/editApplicantRoutes");
 const updateStatusRoutes = require("./routes/applicant/updateStatusRoutes");
-const checkApplicantRoutes = require("./routes/applicant/checkApplicantRoutes"); 
+const checkApplicantRoutes = require("./routes/applicant/checkApplicantRoutes");
 const pendingApplicantRoutes = require("./routes/applicant/pendingApplicantRoutes");
 
 // interview
@@ -45,6 +50,8 @@ const interviewRoutes = require("./routes/interview/interviewRoutes");
 
 // company
 const positionRoutes = require("./routes/company/positionRoutes");
+const appliedSourceRoutes = require("./routes/company/appliedSourceRoutes");
+const discoveredSourceRoutes = require("./routes/company/discoveredSourceRoutes");
 
 // analytic
 const metricRoutes = require("./routes/analytic/metricsRoutes");
@@ -87,15 +94,15 @@ const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
 const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
 
 //password - for password reset
-const passwordRoutes = require("./routes/password/passwordRoutes"); 
+const passwordRoutes = require("./routes/password/passwordRoutes");
 
 // Routes
-app.use("/applicants/pending", pendingApplicantRoutes); 
-app.use('/analytics/dashboard', dashboardRoutes);
+app.use("/applicants/pending", pendingApplicantRoutes);
+app.use("/analytics/dashboard", dashboardRoutes);
 app.use("/applicant/status-history", statusHistoryRoutes);
 app.use("/applicants", applicantRoutes);
 app.use("/applicants/add", addApplicantRoutes);
-app.use("/applicants/check", checkApplicantRoutes); 
+app.use("/applicants/check", checkApplicantRoutes);
 app.use("/applicant/edit", editApplicantRoutes);
 app.use("/applicant/update/status", updateStatusRoutes);
 app.use("/counter", applicantCounterRoutes);
@@ -107,6 +114,8 @@ app.use("/analytic/metrics", metricRoutes);
 app.use("/analytic/graphs", graphsRoutes);
 app.use("/email", emailRoutes);
 app.use("/company", positionRoutes);
+app.use("/company/sources", appliedSourceRoutes);
+app.use("/company/discovered", discoveredSourceRoutes);
 app.use("/user", userRoutes);
 app.use("/status", statusRoutes);
 app.use("/upload", uploadRoutes);
