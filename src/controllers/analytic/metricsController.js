@@ -20,8 +20,8 @@ exports.getFSApplicationCount = async (req, res) => {
 
 exports.applicantReceived = async (req, res) => {
     try {
-        const { month, year, position } = req.query;
-        const applicationsReceived = await metricModel.f_applicationsReceived(month, year, position);
+        const { month, year, position_id } = req.query;
+        const applicationsReceived = await metricModel.f_applicationsReceived(month, year, position_id);
 
         return res.status(200).json({ message: "successfully retrieved", application_received: applicationsReceived })
     } catch (error) {
@@ -32,8 +32,8 @@ exports.applicantReceived = async (req, res) => {
 
 exports.topJobApplied = async (req, res) => {
     try {
-        const { month, year, position } = req.query;
-        const { title, count, total_applicant, percentage } = await metricModel.f_topJobs(month, year, position);
+        const { month, year, position_id } = req.query;
+        const { title, count, total_applicant, percentage } = await metricModel.f_topJobs(month, year, position_id);
 
         return res.status(200).json({ message: "successfully retrieved", title, count, total_applicant, percentage })
     } catch (error) {
@@ -44,8 +44,8 @@ exports.topJobApplied = async (req, res) => {
 
 exports.internalExternalHires = async (req, res) => {
     try {
-        const { month, year, position } = req.query;
-        const { internal, external, internalRate, externalRate } = await metricModel.f_InternalExternalHires(month, year, position);
+        const { month, year, position_id } = req.query;
+        const { internal, external, internalRate, externalRate } = await metricModel.f_InternalExternalHires(month, year, position_id);
 
         return res.status(200).json({ message: "successfully retrieved", internal, external, externalRate, internalRate })
     } catch (error) {
@@ -56,8 +56,8 @@ exports.internalExternalHires = async (req, res) => {
 
 exports.candidateDropOffRate = async (req, res) => {
     try {
-        const { month, year, position } = req.query;
-        const dropoffRate = await metricModel.f_dropOffRate(month, year, position);
+        const { month, year, position_id } = req.query;
+        const dropoffRate = await metricModel.f_dropOffRate(month, year, position_id);
 
         return res.status(200).json({ message: "successfully retrieved", drop_off_rate: dropoffRate })
     } catch (error) {
@@ -68,8 +68,8 @@ exports.candidateDropOffRate = async (req, res) => {
 
 exports.reasonForBlacklisted = async (req, res) => {
     try {
-        const { month, year, position } = req.query;
-        const reasonForBlacklisted = await metricModel.f_reasonForBlacklisted(month, year, position);
+        const { month, year, position_id } = req.query;
+        const reasonForBlacklisted = await metricModel.f_reasonForBlacklisted(month, year, position_id);
 
         return res.status(200).json({ message: "successfully retrieved", reason_for_blacklisted: reasonForBlacklisted })
     } catch (error) {
@@ -80,8 +80,8 @@ exports.reasonForBlacklisted = async (req, res) => {
 
 exports.reasonForRejection = async (req, res) => {
     try {
-        const { month, year, position } = req.query;
-        const reasonForRejection = await metricModel.f_reasonForRejection(month, year, position);
+        const { month, year, position_id } = req.query;
+        const reasonForRejection = await metricModel.f_reasonForRejection(month, year, position_id);
 
         return res.status(200).json({ message: "successfully retrieved", reason_for_rejection: reasonForRejection })
     } catch (error) {
