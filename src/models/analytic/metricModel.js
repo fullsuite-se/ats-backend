@@ -255,29 +255,6 @@ const f_dropOffRate = async (month, year, position_id) => {
 // analytic/metrics
 const f_reasonForBlacklisted = async (month, year, position_id) => {
     try {
-        let whereClause = 'WHERE p.reason IS NOT NULL';
-        const params = [];
-
-        if (month || year || position_id) {
-            const conditions = [];
-
-            if (month) {
-                conditions.push('MONTH(t.created_at) = ?');
-                params.push(parseInt(month));
-            }
-
-            if (year) {
-                conditions.push('YEAR(t.created_at) = ?');
-                params.push(parseInt(year));
-            }
-            if (position_id) {
-                conditions.push('t.position_id = ?');
-                params.push(position_id);
-            }
-
-            whereClause = whereClause + " AND " + conditions.join(" AND ")
-        }
-
         const sql = `
             SELECT 
                 p.reason AS blacklisted_reason,
@@ -293,11 +270,23 @@ const f_reasonForBlacklisted = async (month, year, position_id) => {
                 ), 0) * 100 AS percentage
             FROM ats_applicant_trackings t 
             JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-            ${whereClause}
+            WHERE p.reason IS NOT NULL
+            ${month ? ' AND MONTH(t.created_at) = ?' : ''}
+            ${year ? ' AND YEAR(t.created_at) = ?' : ''}
+            ${position_id ? ' AND t.position_id = ?' : ''}
             GROUP BY p.reason
         `;
 
-        const [results] = await pool.execute(sql, params);
+        const queryParams = [
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : []),
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : [])
+        ];
+
+        const [results] = await pool.execute(sql, queryParams);
 
         return results.map(row => ({
             reason: row.blacklisted_reason,
