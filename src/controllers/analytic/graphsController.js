@@ -1,37 +1,13 @@
 const pool = require("../../config/db");
 const requisitionModel = require("../../models/analytic/requisitionModel");
 
-/*
-exports.requisition = async (req, res) => {
-    const filter = req.query;
-    let results = [];
-
-    if (filter.month) {
-        results = await getRequisitionData(filter, 'month');
-    } else if (filter.year) {
-        results = await getRequisitionData(filter, 'year');
-    } else {
-        results = await getRequisitionData(filter, 'all');
-    }
-
-    res.status(200).json({
-        message: "okay",
-        filters: {
-            month: filter.month || null,
-            year: filter.year || null,
-            position: filter.position || null
-        },
-        requisition: results
-    });
-};
-*/
 
 
 exports.requisition = async (req, res) => {
     try {
         const { month, year, position_id } = req.query;
         const requisition = await requisitionModel.getRequisitionData(month, year, position_id);
-        return res.status(200).json({ requisition: requisition });
+        return res.status(200).json({ message: "successfully retrieved", requisition: requisition });
     } catch (error) {
         res.status(500).json({ message: "Internal Server Error" });
     }
@@ -159,67 +135,169 @@ exports.topAppliedJobs = async (req, res) => {
     }
 };
 
+// exports.applicationTrend = async (req, res) => {
+//     try {
+//         const { month, year, position_id } = req.query;
+
+//         let whereClause = '';
+//         let queryParams = [];
+
+//         if (month && year) {
+//             whereClause = 'WHERE MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
+//             queryParams = [parseInt(month), parseInt(year)];
+//         } else if (month) {
+//             whereClause = 'WHERE MONTH(t.created_at) = ?';
+//             queryParams = [parseInt(month)];
+//         } else if (year) {
+//             whereClause = 'WHERE YEAR(t.created_at) = ?';
+//             queryParams = [parseInt(year)];
+//         }
+
+//         let sql = `
+//             SELECT 
+//                 YEAR(t.created_at) AS year, 
+//                 MONTHNAME(t.created_at) AS month, 
+//                 MONTH(t.created_at) AS month_number, 
+//                 COUNT(*) AS count
+//             FROM ats_applicant_trackings t
+//             ${whereClause}
+//             GROUP BY year, month, month_number
+//             ORDER BY year, month_number
+//         `;
+
+//         console.log('Application Trend Query:', sql, 'Params:', queryParams);
+//         const [trend] = await pool.execute(sql, queryParams);
+
+//         // Transform data into the desired format
+//         const result = {};
+//         trend.forEach(({ year, month, count }) => {
+//             if (!result[year]) {
+//                 result[year] = [];
+//             }
+//             result[year].push({ month, count });
+//         });
+
+//         // Fetch total applications count with the same filters
+//         const totalSql = `SELECT COUNT(*) AS total FROM ats_applicant_trackings t ${whereClause}`;
+//         console.log('Application Trend Total Query:', totalSql, 'Params:', queryParams);
+
+//         const [[{ total }]] = await pool.execute(totalSql, queryParams);
+
+//         res.status(200).json({
+//             message: "okay",
+//             filters: {
+//                 month: month || null,
+//                 year: year || null
+//             },
+//             data: { total, trend: result }
+//         });
+//     } catch (error) {
+//         console.error("Error in applicationTrend:", error);
+//         res.status(500).json({ message: "Internal Server Error" });
+//     }
+// };
+
+
 exports.applicationTrend = async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, position_id } = req.query;
 
-        let whereClause = '';
+        let whereConditions = [];
         let queryParams = [];
 
-        if (month && year) {
-            whereClause = 'WHERE MONTH(t.created_at) = ? AND YEAR(t.created_at) = ?';
-            queryParams = [parseInt(month), parseInt(year)];
-        } else if (month) {
-            whereClause = 'WHERE MONTH(t.created_at) = ?';
-            queryParams = [parseInt(month)];
-        } else if (year) {
-            whereClause = 'WHERE YEAR(t.created_at) = ?';
-            queryParams = [parseInt(year)];
+        if (year) {
+            whereConditions.push('YEAR(t.created_at) = ?');
+            queryParams.push(parseInt(year));
         }
 
-        let sql = `
-            SELECT 
-                YEAR(t.created_at) AS year, 
-                MONTHNAME(t.created_at) AS month, 
-                MONTH(t.created_at) AS month_number, 
+        if (month) {
+            whereConditions.push('MONTH(t.created_at) = ?');
+            queryParams.push(parseInt(month));
+        }
+
+        if (position_id) {
+            whereConditions.push('t.position_id = ?');
+            queryParams.push(position_id);
+        }
+
+        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        let selectFields = '';
+        let groupBy = '';
+        let orderBy = '';
+
+        if (year && month) {
+            // Group by day
+            selectFields = `
+                YEAR(t.created_at) AS year,
+                MONTH(t.created_at) AS month_number,
+                DAY(t.created_at) AS day,
                 COUNT(*) AS count
+            `;
+            groupBy = `GROUP BY year, month_number, day`;
+            orderBy = `ORDER BY year, month_number, day`;
+        } else {
+            // Group by month
+            selectFields = `
+                YEAR(t.created_at) AS year,
+                MONTHNAME(t.created_at) AS month,
+                MONTH(t.created_at) AS month_number,
+                COUNT(*) AS count
+            `;
+            groupBy = `GROUP BY year, month, month_number`;
+            orderBy = `ORDER BY year, month_number`;
+        }
+
+        const sql = `
+            SELECT ${selectFields}
             FROM ats_applicant_trackings t
             ${whereClause}
-            GROUP BY year, month, month_number
-            ORDER BY year, month_number
+            ${groupBy}
+            ${orderBy}
         `;
 
         console.log('Application Trend Query:', sql, 'Params:', queryParams);
         const [trend] = await pool.execute(sql, queryParams);
 
-        // Transform data into the desired format
         const result = {};
-        trend.forEach(({ year, month, count }) => {
-            if (!result[year]) {
-                result[year] = [];
+
+        trend.forEach(row => {
+            const yearKey = row.year;
+            if (!result[yearKey]) {
+                result[yearKey] = [];
             }
-            result[year].push({ month, count });
+
+            if (row.day !== undefined) {
+                // Daily trend
+                result[yearKey].push({ day: row.day, count: row.count });
+            } else {
+                // Monthly trend
+                result[yearKey].push({ month: row.month, count: row.count });
+            }
         });
 
-        // Fetch total applications count with the same filters
+        // Total applications
         const totalSql = `SELECT COUNT(*) AS total FROM ats_applicant_trackings t ${whereClause}`;
         console.log('Application Trend Total Query:', totalSql, 'Params:', queryParams);
-
         const [[{ total }]] = await pool.execute(totalSql, queryParams);
 
         res.status(200).json({
             message: "okay",
             filters: {
                 month: month || null,
-                year: year || null
+                year: year || null,
+                position_id: position_id || null
             },
             data: { total, trend: result }
         });
+
     } catch (error) {
         console.error("Error in applicationTrend:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+
 
 exports.applicantSources = async (req, res) => {
     try {
