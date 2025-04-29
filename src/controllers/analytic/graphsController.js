@@ -31,7 +31,7 @@ exports.requisition = async (req, res) => {
     try {
         const { month, year, position_id } = req.query;
         const requisition = await requisitionModel.getRequisitionData(month, year, position_id);
-
+        return res.status(200).json({ requisition: requisition });
     } catch (error) {
         res.status(500).json({ message: "Internal Server Error" });
     }

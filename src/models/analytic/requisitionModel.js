@@ -45,9 +45,6 @@ const pool = require("../../config/db");
 //     }
 // };
 
-
-const pool = require("../../config/db");
-
 exports.getRequisitionData = async (month, year, position_id) => {
     try {
         // Determine groupBy logic
