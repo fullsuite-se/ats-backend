@@ -252,122 +252,109 @@ const f_dropOffRate = async (month, year, position_id) => {
     }
 };
 
+
 // analytic/metrics
 const f_reasonForBlacklisted = async (month, year, position_id) => {
     try {
-        let whereClause = `WHERE p.status = 'BLACKLISTED'`;
+        let whereClause = 'WHERE p.reason IS NOT NULL';
         const params = [];
+        if (month || year || position_id) {
+            const conditions = [];
 
-        if (month) {
-            whereClause += ` AND MONTH(t.created_at) = ?`;
-            params.push(parseInt(month, 10));
-        }
-        if (year) {
-            whereClause += ` AND YEAR(t.created_at) = ?`;
-            params.push(parseInt(year, 10));
-        }
-        if (position_id) {
-            whereClause += ` AND t.position_id = ?`;
-            params.push(position_id);
-        }
+            if (month) {
+                conditions.push('MONTH(t.created_at) = ?');
+                params.push(parseInt(month));
+            }
 
-        // Count the blacklisted applicants
-        const [[{ blacklistedCount }]] = await pool.execute(
-            `
-            SELECT COUNT(p.status) AS blacklistedCount
-            FROM ats_applicant_trackings t
-            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-            ${whereClause}
-            `,
-            params
-        );
+            if (year) {
+                conditions.push('YEAR(t.created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('t.position_id = ?');
+                params.push(position_id);
+            }
 
-        if (blacklistedCount === 0) {
-            return [];
+            whereClause = whereClause + " AND " + conditions.join(" AND ")
         }
 
         const sql = `
             SELECT 
                 p.reason AS blacklisted_reason,
-                (COUNT(p.reason) / ?) * 100 AS percentage
-            FROM ats_applicant_trackings t
+                COUNT(p.reason) AS count,
+                IFNULL(COUNT(p.reason) * 1.0 / (SELECT COUNT(*) 
+                FROM ats_applicant_trackings t 
+                JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+                ${whereClause}), 0) * 100 AS percentage
+            FROM ats_applicant_trackings t 
             JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
             ${whereClause}
             GROUP BY p.reason
         `;
 
-        const [results] = await pool.execute(sql, [blacklistedCount, ...params]);
+        const [results] = await pool.execute(sql, [...params, ...params]);
 
         return results.map(row => ({
             reason: row.blacklisted_reason,
+            count: row.count,
             percentage: parseFloat(row.percentage).toFixed(2) + '%'
         }));
-
     } catch (error) {
         console.error('Error fetching blacklist reasons:', error);
         return null;
     }
 };
 
+
+// analytic/metrics
 const f_reasonForRejection = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE p.reason_for_rejection IS NOT NULL';
         const params = [];
 
-        const conditions = [];
-        if (month) {
-            conditions.push('MONTH(t.created_at) = ?');
-            params.push(parseInt(month, 10));
-        }
-        if (year) {
-            conditions.push('YEAR(t.created_at) = ?');
-            params.push(parseInt(year, 10));
-        }
-        if (position_id) {
-            conditions.push('t.position_id = ?');
-            params.push(position_id);
-        }
+        if (month || year || position_id) {
+            const conditions = [];
 
-        if (conditions.length > 0) {
-            whereClause += ` AND ${conditions.join(' AND ')}`;
-        }
+            if (month) {
+                conditions.push('MONTH(t.created_at) = ?');
+                params.push(parseInt(month));
+            }
 
-        // First, fetch total count once
-        const [[{ totalCount }]] = await pool.execute(
-            `
-            SELECT COUNT(*)
-            FROM ats_applicant_trackings t
-            JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-            ${whereClause}
-            `,
-            params
-        );
+            if (year) {
+                conditions.push('YEAR(t.created_at) = ?');
+                params.push(parseInt(year));
+            }
+            if (position_id) {
+                conditions.push('t.position_id = ?');
+                params.push(position_id);
+            }
 
-        if (totalCount === 0) {
-            return [];
+            whereClause = whereClause + " AND " + conditions.join(" AND ")
         }
 
         const sql = `
             SELECT 
-                p.reason_for_rejection AS rejection_reason,
+                p.reason_for_rejection,
                 COUNT(p.reason_for_rejection) AS count,
-                (COUNT(p.reason_for_rejection) / ?) * 100 AS percentage
-            FROM ats_applicant_trackings t
+                IFNULL(COUNT(p.reason_for_rejection) * 1.0 / (SELECT COUNT(*) 
+                FROM ats_applicant_trackings t 
+                JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+                ${whereClause}), 0) * 100 AS percentage
+            FROM ats_applicant_trackings t 
             JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
             ${whereClause}
             GROUP BY p.reason_for_rejection
         `;
 
-        const [results] = await pool.execute(sql, [totalCount, ...params]);
+        const [results] = await pool.execute(sql, [...params, ...params]);
 
         return results.map(row => ({
-            reason: row.rejection_reason,
+            reason: row.reason_for_rejection,
             count: row.count,
             percentage: parseFloat(row.percentage).toFixed(2) + '%'
         }));
-
     } catch (error) {
-        console.error('Error fetching rejection reasons:', error);
+        console.error('Error fetching blacklist reasons:', error);
         return null;
     }
 };
