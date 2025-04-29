@@ -302,44 +302,38 @@ const f_reasonForBlacklisted = async (month, year, position_id) => {
 // analytic/metrics
 const f_reasonForRejection = async (month, year, position_id) => {
     try {
-        let whereClause = 'WHERE p.reason_for_rejection IS NOT NULL';
-        const params = [];
-
-        if (month || year || position_id) {
-            const conditions = [];
-
-            if (month) {
-                conditions.push('MONTH(t.created_at) = ?');
-                params.push(parseInt(month));
-            }
-
-            if (year) {
-                conditions.push('YEAR(t.created_at) = ?');
-                params.push(parseInt(year));
-            }
-            if (position_id) {
-                conditions.push('t.position_id = ?');
-                params.push(position_id);
-            }
-
-            whereClause = whereClause + " AND " + conditions.join(" AND ")
-        }
-
         const sql = `
             SELECT 
                 p.reason_for_rejection,
                 COUNT(p.reason_for_rejection) AS count,
-                IFNULL(COUNT(p.reason_for_rejection) * 1.0 / (SELECT COUNT(*) 
-                FROM ats_applicant_trackings t 
-                JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-                ${whereClause}), 0) * 100 AS percentage
+                IFNULL(COUNT(p.reason_for_rejection) * 1.0 / (
+                    SELECT COUNT(*) 
+                    FROM ats_applicant_trackings t_sub 
+                    JOIN ats_applicant_progress p_sub ON t_sub.progress_id = p_sub.progress_id
+                    WHERE p_sub.reason_for_rejection IS NOT NULL
+                    ${month ? ' AND MONTH(t_sub.created_at) = ?' : ''}
+                    ${year ? ' AND YEAR(t_sub.created_at) = ?' : ''}
+                    ${position_id ? ' AND t_sub.position_id = ?' : ''}
+                ), 0) * 100 AS percentage
             FROM ats_applicant_trackings t 
             JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-            ${whereClause}
+            WHERE p.reason_for_rejection IS NOT NULL
+            ${month ? ' AND MONTH(t.created_at) = ?' : ''}
+            ${year ? ' AND YEAR(t.created_at) = ?' : ''}
+            ${position_id ? ' AND t.position_id = ?' : ''}
             GROUP BY p.reason_for_rejection
         `;
 
-        const [results] = await pool.execute(sql, [...params, ...params]);
+        const queryParams = [
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : []),
+            ...(month ? [parseInt(month)] : []),
+            ...(year ? [parseInt(year)] : []),
+            ...(position_id ? [position_id] : [])
+        ];
+
+        const [results] = await pool.execute(sql, queryParams);
 
         return results.map(row => ({
             reason: row.reason_for_rejection,
