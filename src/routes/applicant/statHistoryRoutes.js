@@ -7,4 +7,6 @@ router.get("/:progressId", statusHistoryController.getApplicantStatusHistory);
 router.put("/:id", statusHistoryController.updateApplicantStatusHistory);
 router.put("/:id/delete", statusHistoryController.softDeleteApplicantStatusHistory);
 
+
+
 module.exports = router;

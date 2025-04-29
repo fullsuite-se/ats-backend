@@ -1,5 +1,6 @@
 const pool = require("../../config/db");
 const { now } = require("../../utils/date");
+const { v4: uuidv4 } = require("uuid");
 
 exports.getApplicantStatusHistory = async (req, res) => {
   const { progressId } = req.params;
@@ -90,6 +91,46 @@ exports.softDeleteApplicantStatusHistory = async (req, res) => {
     console.error("Error deleting status history:", error);
     return res.status(500).json({
       message: "Failed to delete status history",
+      error: error.message,
+    });
+  }
+};
+
+exports.addInitialStatusHistory = async (req, res) => {
+  const { progressId, isFromATS, userId } = req.body;
+
+  try {
+    const statusesToInsert = isFromATS
+      ? ["UNPROCESSED"]
+      : ["UNPROCESSED", "TEST_SENT"];
+
+    const values = statusesToInsert.map((status) => [
+      uuidv4(), // generate new UUID for each history record
+      progressId,
+      status,
+      0, // edited
+      0, // deleted
+      userId,
+      now(),
+    ]);
+
+    const sql = `
+      INSERT INTO ats_applicant_status_history 
+      (history_id, progress_id, status, edited, deleted, changed_by, changed_at)
+      VALUES ?
+    `;
+
+    const [results] = await pool.query(sql, [values]);
+
+    console.log("Status history inserted:", results);
+
+    return res
+      .status(201)
+      .json({ message: "Initial status history inserted successfully" });
+  } catch (error) {
+    console.error("Error inserting initial status history:", error);
+    return res.status(500).json({
+      message: "Failed to insert initial status history",
       error: error.message,
     });
   }
