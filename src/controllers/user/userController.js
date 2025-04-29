@@ -12,19 +12,12 @@ const getUserInfoSQL = `
         hris_user_infos.last_name, 
         hris_user_infos.user_pic, 
         hris_user_designations.company_id,
-        company_job_titles.job_title, -- Fetch job title
-        JSON_OBJECTAGG(
-            service_features.service_feature_id, 
-            JSON_OBJECT(
-                'feature_name', service_features.feature_name,
-                'description', service_features.description,
-                'category', service_features.category
-            )
-        ) AS feature_details
+          company_job_titles.job_title,
+        JSON_OBJECTAGG(service_features.service_feature_id, service_features.feature_name) AS feature_names
     FROM hris_user_accounts
     LEFT JOIN hris_user_infos ON hris_user_accounts.user_id = hris_user_infos.user_id
     LEFT JOIN hris_user_designations ON hris_user_infos.user_id = hris_user_designations.user_id
-    LEFT JOIN company_job_titles ON hris_user_designations.job_title_id = company_job_titles.job_title_id -- Join with job titles
+       LEFT JOIN company_job_titles ON hris_user_designations.job_title_id = company_job_titles.job_title_id -- Join with job titles
     LEFT JOIN hris_user_access_permissions ON hris_user_accounts.user_id = hris_user_access_permissions.user_id
     LEFT JOIN service_features ON hris_user_access_permissions.service_feature_id = service_features.service_feature_id
     WHERE hris_user_accounts.user_id = ?
@@ -35,23 +28,23 @@ const getUserInfoSQL = `
         hris_user_infos.last_name, 
         hris_user_infos.user_pic,
         hris_user_designations.company_id,
-        company_job_titles.job_title-- Group by job title
+        company_job_titles.job_title 
 `;
 
 exports.getUserInfo = async (req, res) => {
+    console.log(req.user);
+
     const user_id = req.user.user_id;
 
     try {
         const values = [user_id];
-        const [results] = await pool.execute(getUserInfoSQL, values);
 
-        if (results.length === 0) {
-            return res.status(404).json({ message: "User not found" });
-        }
+        const [results] = await pool.execute(getUserInfoSQL, values);
+        if (results.length == 0) return res.status(404).json({ message: "User not found" });
 
         res.status(200).json(results[0]);
     } catch (error) {
-        console.error("Error fetching user info:", error);
+        console.error(error);
         res.status(500).json({ message: error.message });
     }
 };
