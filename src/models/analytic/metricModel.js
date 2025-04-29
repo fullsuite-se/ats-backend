@@ -37,6 +37,8 @@ const f_applicationsReceived = async (month, year, position_id) => {
     }
 };
 
+
+//not priority. may have bugs.
 const f_topJobs = async (month, year, position_id) => {
     try {
         let whereClause = '';
@@ -141,7 +143,7 @@ const f_totalHires = async (month, year, position_id) => {
         return null;
     }
 }
-
+//not priority. may have bugs.
 const f_InternalExternalHires = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE p.status = \'JOB_OFFER_ACCEPTED\'';
@@ -203,6 +205,7 @@ const f_InternalExternalHires = async (month, year, position_id) => {
     }
 };
 
+
 const f_dropOffRate = async (month, year, position_id) => {
     try {
         let whereClause = `WHERE p.status IN ( 'JOB_OFFER_REJECTED', 'WITHDREW_APPLICATION', 'GHOSTED', 'BLACKLISTED', 'NOT_FIT')`;
@@ -241,7 +244,7 @@ const f_dropOffRate = async (month, year, position_id) => {
 
         const applicantReceived = await f_applicationsReceived(month, year, position_id);
 
-        return totalHires > 0
+        return applicantReceived > 0
             ? ((totalDropOffs / applicantReceived) * 100).toFixed(2) + '%'
             : '0.00%';
 
