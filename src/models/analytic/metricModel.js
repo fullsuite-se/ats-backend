@@ -252,12 +252,12 @@ const f_dropOffRate = async (month, year, position_id) => {
     }
 };
 
-
 // analytic/metrics
 const f_reasonForBlacklisted = async (month, year, position_id) => {
     try {
         let whereClause = 'WHERE p.reason IS NOT NULL';
         const params = [];
+
         if (month || year || position_id) {
             const conditions = [];
 
@@ -282,17 +282,22 @@ const f_reasonForBlacklisted = async (month, year, position_id) => {
             SELECT 
                 p.reason AS blacklisted_reason,
                 COUNT(p.reason) AS count,
-                IFNULL(COUNT(p.reason) * 1.0 / (SELECT COUNT(*) 
-                FROM ats_applicant_trackings t 
-                JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
-                ${whereClause}), 0) * 100 AS percentage
+                IFNULL(COUNT(p.reason) * 1.0 / (
+                    SELECT COUNT(*) 
+                    FROM ats_applicant_trackings t_sub 
+                    JOIN ats_applicant_progress p_sub ON t_sub.progress_id = p_sub.progress_id
+                    WHERE p_sub.reason IS NOT NULL
+                    ${month ? ' AND MONTH(t_sub.created_at) = ?' : ''}
+                    ${year ? ' AND YEAR(t_sub.created_at) = ?' : ''}
+                    ${position_id ? ' AND t_sub.position_id = ?' : ''}
+                ), 0) * 100 AS percentage
             FROM ats_applicant_trackings t 
             JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
             ${whereClause}
             GROUP BY p.reason
         `;
 
-        const [results] = await pool.execute(sql, [...params, ...params]);
+        const [results] = await pool.execute(sql, params);
 
         return results.map(row => ({
             reason: row.blacklisted_reason,
@@ -304,7 +309,6 @@ const f_reasonForBlacklisted = async (month, year, position_id) => {
         return null;
     }
 };
-
 
 // analytic/metrics
 const f_reasonForRejection = async (month, year, position_id) => {
