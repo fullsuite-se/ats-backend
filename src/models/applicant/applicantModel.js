@@ -147,7 +147,7 @@ const insertApplicant = async (applicant, user_id = null) => {
           applicant.created_by || CREATED_BY,
           applicant.updated_by || UPDATED_BY,
           applicant.test_result || null,
-          applicant.applied_source || null,
+          applicant.applied_source.toUpperCase().replace(/ /g, "_") || null,
           applicant.referrer_name || null,
           applicant.company_id || COMPANY_ID,
           applicant.position_id,
@@ -170,7 +170,7 @@ const insertApplicant = async (applicant, user_id = null) => {
           ids.contact_id,
           applicant.gender || null,
           applicant.birth_date || null,
-          applicant.discovered_at || null,
+          applicant.discovered_at.toUpperCase().replace(/ /g, "_") || null,
           applicant.cv_link || null,
         ]
       );
