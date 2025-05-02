@@ -351,3 +351,60 @@ exports.job_titles = async (req, res) => {
 
     return res.status(200).json({ message: "successfully retrieved", job_titles: results })
 }
+
+exports.activateUserAccount = async (req, res) => {
+    try {
+        const { user_id } = req.params; // Assuming the user ID is passed as a URL parameter
+
+        console.log("Activating user account for user_id:", user_id);
+
+        // Update the is_deactivated field to 0 (active)
+        const activateUserSQL = `
+            UPDATE hris_user_accounts 
+            SET is_deactivated = 0 
+            WHERE user_id = ?
+        `;
+        const values = [user_id];
+
+        const [result] = await pool.execute(activateUserSQL, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "User not found or already active" });
+        }
+
+        console.log("User account activated successfully for user_id:", user_id);
+
+        return res.status(200).json({ message: "User account activated successfully" });
+    } catch (error) {
+        console.error("Error activating user account:", error);
+        return res.status(500).json({ message: "Error activating user account", error });
+    }
+};
+
+exports.deactivateUserAccount = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+
+        console.log("Deactivating user account for user_id:", user_id);
+
+        const deactivateUserSQL = `
+            UPDATE hris_user_accounts 
+            SET is_deactivated = 1 
+            WHERE user_id = ?
+        `;
+        const values = [user_id];
+
+        const [result] = await pool.execute(deactivateUserSQL, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "User not found or already deactivated" });
+        }
+
+        console.log("User account deactivated successfully for user_id:", user_id);
+
+        return res.status(200).json({ message: "User account deactivated successfully" });
+    } catch (error) {
+        console.error("Error deactivating user account:", error);
+        return res.status(500).json({ message: "Error deactivating user account", error });
+    }
+};

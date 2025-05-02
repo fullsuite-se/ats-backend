@@ -44,8 +44,8 @@ const pool = require("../../config/db");
 //         return [];
 //     }
 // };
-
 exports.getRequisitionData = async (month, year, position_id) => {
+    console.log("Fetching requisition data with filters:", { month, year, position_id });
     try {
         // Determine groupBy logic
         let groupBy = 'year'; // default
@@ -114,6 +114,10 @@ exports.getRequisitionData = async (month, year, position_id) => {
             queryParams.push(position_id);
         }
 
+        // Log the position_id and query parameters
+        console.log("Position ID:", position_id);
+        console.log("Query Parameters:", queryParams);
+
         // Final SQL query
         const sql = `
             SELECT
@@ -128,6 +132,9 @@ exports.getRequisitionData = async (month, year, position_id) => {
             GROUP BY ${groupColumn}
             ORDER BY ${orderColumn};
         `;
+
+        // Log the final query
+        console.log("SQL Query:", sql);
 
         const [results] = await pool.execute(sql, queryParams);
         return results;
