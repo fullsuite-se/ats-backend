@@ -135,6 +135,103 @@ exports.topAppliedJobs = async (req, res) => {
     }
 };
 
+// exports.applicationTrend = async (req, res) => {
+//     try {
+//         const { month, year, position_id } = req.query;
+
+//         let whereConditions = [];
+//         let queryParams = [];
+
+//         if (year) {
+//             whereConditions.push('YEAR(t.created_at) = ?');
+//             queryParams.push(parseInt(year));
+//         }
+
+//         if (month) {
+//             whereConditions.push('MONTH(t.created_at) = ?');
+//             queryParams.push(parseInt(month));
+//         }
+
+//         if (position_id) {
+//             whereConditions.push('t.position_id = ?');
+//             queryParams.push(position_id);
+//         }
+
+//         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+//         let selectFields = '';
+//         let groupBy = '';
+//         let orderBy = '';
+
+//         if (year && month) {
+//             // Group by full date
+//             selectFields = `
+//                 DATE(t.created_at) AS date,
+//                 COUNT(*) AS count
+//             `;
+//             groupBy = `GROUP BY date`;
+//             orderBy = `ORDER BY date`;
+//         } else {
+//             // Group by month
+//             selectFields = `
+//                 YEAR(t.created_at) AS year,
+//                 MONTHNAME(t.created_at) AS month,
+//                 MONTH(t.created_at) AS month_number,
+//                 COUNT(*) AS count
+//             `;
+//             groupBy = `GROUP BY year, month, month_number`;
+//             orderBy = `ORDER BY year, month_number`;
+//         }
+
+//         const sql = `
+//             SELECT ${selectFields}
+//             FROM ats_applicant_trackings t
+//             ${whereClause}
+//             ${groupBy}
+//             ${orderBy}
+//         `;
+
+//         console.log('Application Trend Query:', sql, 'Params:', queryParams);
+//         const [trend] = await pool.execute(sql, queryParams);
+
+//         const result = {};
+
+//         trend.forEach(row => {
+//             if (row.date) {
+//                 const formattedDate = new Date(row.date).toISOString().slice(0, 10); // YYYY-MM-DD
+//                 if (!result[formattedDate]) {
+//                     result[formattedDate] = 0;
+//                 }
+//                 result[formattedDate] += row.count;
+//             } else {
+//                 const yearKey = row.year;
+//                 if (!result[yearKey]) {
+//                     result[yearKey] = [];
+//                 }
+//                 result[yearKey].push({ month: row.month, count: row.count });
+//             }
+//         });
+
+//         // Total applications
+//         const totalSql = `SELECT COUNT(*) AS total FROM ats_applicant_trackings t ${whereClause}`;
+//         console.log('Application Trend Total Query:', totalSql, 'Params:', queryParams);
+//         const [[{ total }]] = await pool.execute(totalSql, queryParams);
+
+//         res.status(200).json({
+//             message: "okay",
+//             filters: {
+//                 month: month || null,
+//                 year: year || null,
+//                 position_id: position_id || null
+//             },
+//             data: { total, trend: result }
+//         });
+
+//     } catch (error) {
+//         console.error("Error in applicationTrend:", error);
+//         res.status(500).json({ message: "Internal Server Error" });
+//     }
+// };
 exports.applicationTrend = async (req, res) => {
     try {
         const { month, year, position_id } = req.query;
@@ -167,7 +264,8 @@ exports.applicationTrend = async (req, res) => {
             // Group by full date
             selectFields = `
                 DATE(t.created_at) AS date,
-                COUNT(*) AS count
+                COUNT(*) AS applicant_count,
+                SUM(CASE WHEN p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) AS hired_count
             `;
             groupBy = `GROUP BY date`;
             orderBy = `ORDER BY date`;
@@ -177,7 +275,8 @@ exports.applicationTrend = async (req, res) => {
                 YEAR(t.created_at) AS year,
                 MONTHNAME(t.created_at) AS month,
                 MONTH(t.created_at) AS month_number,
-                COUNT(*) AS count
+                COUNT(*) AS applicant_count,
+                SUM(CASE WHEN p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) AS hired_count
             `;
             groupBy = `GROUP BY year, month, month_number`;
             orderBy = `ORDER BY year, month_number`;
@@ -186,6 +285,7 @@ exports.applicationTrend = async (req, res) => {
         const sql = `
             SELECT ${selectFields}
             FROM ats_applicant_trackings t
+            LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
             ${whereClause}
             ${groupBy}
             ${orderBy}
@@ -200,22 +300,31 @@ exports.applicationTrend = async (req, res) => {
             if (row.date) {
                 const formattedDate = new Date(row.date).toISOString().slice(0, 10); // YYYY-MM-DD
                 if (!result[formattedDate]) {
-                    result[formattedDate] = 0;
+                    result[formattedDate] = { applicants: 0, hires: 0 };
                 }
-                result[formattedDate] += row.count;
+                result[formattedDate].applicants += row.applicant_count;
+                result[formattedDate].hires += row.hired_count;
             } else {
                 const yearKey = row.year;
                 if (!result[yearKey]) {
                     result[yearKey] = [];
                 }
-                result[yearKey].push({ month: row.month, count: row.count });
+                result[yearKey].push({ month: row.month, applicants: row.applicant_count, hires: row.hired_count });
             }
         });
 
-        // Total applications
-        const totalSql = `SELECT COUNT(*) AS total FROM ats_applicant_trackings t ${whereClause}`;
+        // Total counts
+        const totalSql = `
+            SELECT 
+                COUNT(*) AS total_applicants,
+                SUM(CASE WHEN p.status = 'JOB_OFFER_ACCEPTED' THEN 1 ELSE 0 END) AS total_hires
+            FROM ats_applicant_trackings t
+            LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+            ${whereClause}
+        `;
+
         console.log('Application Trend Total Query:', totalSql, 'Params:', queryParams);
-        const [[{ total }]] = await pool.execute(totalSql, queryParams);
+        const [[{ total_applicants, total_hires }]] = await pool.execute(totalSql, queryParams);
 
         res.status(200).json({
             message: "okay",
@@ -224,7 +333,11 @@ exports.applicationTrend = async (req, res) => {
                 year: year || null,
                 position_id: position_id || null
             },
-            data: { total, trend: result }
+            data: {
+                total_applicants,
+                total_hires,
+                trend: result
+            }
         });
 
     } catch (error) {
