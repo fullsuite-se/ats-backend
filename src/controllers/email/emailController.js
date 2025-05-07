@@ -272,3 +272,46 @@ exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
         console.error("Error sending email:", error);
     }
 }
+
+exports.deleteEmailTemplate = async (req, res) => {
+    try {
+        const { template_id } = req.params;
+
+        if (!template_id) {
+            return res.status(400).json({ message: "Template ID is required" });
+        }
+
+        const sql = `
+            DELETE FROM ats_email_templates
+            WHERE template_id = ?;
+        `;
+
+        await pool.execute(sql, [template_id]);
+        res.status(200).json({ message: "Template deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.updateEmailTemplate = async (req, res) => {
+    try {
+        const { template_id } = req.params;
+        const { title, subject, body } = req.body;
+
+        if (!template_id || !title || !subject || !body) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        const sql = `
+            UPDATE ats_email_templates
+            SET title = ?, subject = ?, body = ?
+            WHERE template_id = ?;
+        `;
+
+        const values = [title, subject, body, template_id];
+        await pool.execute(sql, values);
+        res.status(200).json({ message: "Template updated successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
