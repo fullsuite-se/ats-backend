@@ -11,4 +11,6 @@ router.post('/add/template', emailController.addEmailTemplates);
 router.get('/templates', emailController.emailTemplates);
 router.post("/applicant", upload.array('files', 10) , emailController.emailApplicant);
 router.post("/applicant/test-url", emailController.emailApplicantTestAssessment)
+router.delete("/templates/:template_id", emailController.deleteEmailTemplate);
+router.put("/templates/:template_id", emailController.updateEmailTemplate);
 module.exports = router;

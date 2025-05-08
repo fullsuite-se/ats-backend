@@ -18,4 +18,7 @@ router.get('/service-features', userController.service_features);
 
 router.put("/user-management/:id", userController.updateUserAccount);
 
+router.put("/activate/:user_id", userController.activateUserAccount);
+
+router.put("/deactivate/:user_id", userController.deactivateUserAccount);
 module.exports = router;

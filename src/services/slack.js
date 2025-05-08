@@ -15,39 +15,42 @@ const getSlackUserByEmail = async (email) => {
             email,
         });
 
-        return result.user; // full user info, including ID
+        return result.user;
     } catch (error) {
         console.error("Error fetching user by email:", error);
         return null;
     }
 };
 
+const splitNoteIntoChunks = (text, chunkSize = 2900) => {
+    const chunks = [];
+    for (let i = 0; i < text.length; i += chunkSize) {
+        chunks.push(text.slice(i, i + chunkSize));
+    }
+    return chunks;
+};
 
 module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
     let applicant = await applicantModel.getApplicant(applicant_id);
     applicant = applicant[0];
 
-    // Get the Slack user ID using email
     const slackUser = await getSlackUserByEmail(user.user_email);
     const userMention = slackUser ? `<@${slackUser.id}>` : `${user.first_name} ${user.last_name}`;
 
     const subject = `New interview was created for *${applicant.first_name} ${applicant.last_name}*`;
-
-    // Fallback text for clients that don't support blocks
     const text = `${userMention}: ${subject.replace(/\*/g, '')}`;
 
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
         channel: process.env.SLACK_CHANNEL,
         text: text,
-        // Using blocks for more structured message with mention
         blocks: [
             {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": `${userMention}: ${subject}`
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: `${userMention}: ${subject}`
                 }
             }
         ],
@@ -56,38 +59,81 @@ module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
     });
 };
 
+// module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
+//     const user = await userModel.getUserInfo(interviewer_id);
+//     let applicant = await applicantModel.getApplicant(applicant_id);
+//     applicant = applicant[0];
+
+//     const slackUser = await getSlackUserByEmail(user.user_email);
+//     const userMention = slackUser ? `<@${slackUser.id}>` : `${user.first_name} ${user.last_name}`;
+
+//     const subject = `New note was added for *${applicant.first_name} ${applicant.last_name}*`;
+//     const text = `${userMention}: ${subject.replace(/\*/g, '')} ${note}`;
+
+//     const noteChunks = splitNoteIntoChunks(note);
+//     const noteBlocks = noteChunks.map(chunk => ({
+//         type: "section",
+//         text: {
+//             type: "mrkdwn",
+//             text: `>${chunk}`
+//         }
+//     }));
+
+//     await app.client.chat.postMessage({
+//         token: process.env.SLACK_BOT_TOKEN,
+//         channel: process.env.SLACK_CHANNEL,
+//         text: text,
+//         blocks: [
+//             {
+//                 type: "section",
+//                 text: {
+//                     type: "mrkdwn",
+//                     text: `${userMention}: ${subject}`
+//                 }
+//             },
+//             ...noteBlocks
+//         ],
+//         unfurl_links: false,
+//         unfurl_media: false
+//     });
+// };
+
+
 module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
     let applicant = await applicantModel.getApplicant(applicant_id);
     applicant = applicant[0];
 
-    // Get the Slack user ID using email
     const slackUser = await getSlackUserByEmail(user.user_email);
     const userMention = slackUser ? `<@${slackUser.id}>` : `${user.first_name} ${user.last_name}`;
 
     const subject = `New note was added for *${applicant.first_name} ${applicant.last_name}*`;
+    const cleanedNote = note.trim().replace(/\r\n|\r|\n/g, '\n>'); // ensures all lines are blockquoted
 
-    // Note is already included in the subject, no need for duplicate content
-    // Remove the extra asterisk that was in the original code
+    const formattedNote = `>${cleanedNote}`; // Prefix the first line too
+
+    const noteChunks = splitNoteIntoChunks(formattedNote);
+    const noteBlocks = noteChunks.map(chunk => ({
+        type: "section",
+        text: {
+            type: "mrkdwn",
+            text: chunk
+        }
+    }));
+
     await app.client.chat.postMessage({
         token: process.env.SLACK_BOT_TOKEN,
         channel: process.env.SLACK_CHANNEL,
         text: `${userMention}: ${subject.replace(/\*/g, '')} ${note}`,
         blocks: [
             {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": `${userMention}: ${subject}`
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: `${userMention}: ${subject}`
                 }
             },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": `>${note}`  // Using blockquote for the note content
-                }
-            }
+            ...noteBlocks
         ],
         unfurl_links: false,
         unfurl_media: false

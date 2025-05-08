@@ -7,101 +7,6 @@ const CREATED_BY = process.env.CREATED_BY;
 const UPDATED_BY = process.env.UPDATED_BY;
 const COMPANY_ID = process.env.COMPANY_ID;
 
-// const insertApplicant = async (applicant, user_id = null) => {
-//     const ids = {
-//         applicant_id: uuidv4(),
-//         contact_id: uuidv4(),
-//         tracking_id: uuidv4(),
-//         progress_id: uuidv4(),
-//         interview_id: uuidv4()
-//     };
-
-//     let connection;
-//     try {
-//         connection = await pool.getConnection();
-//         await connection.beginTransaction();
-
-//         // Insert progress
-//         await connection.execute(
-//             `INSERT INTO ats_applicant_progress (progress_id, stage, status, blacklisted_type, reason) VALUES (?, ?, ?, ?, ?)`,
-//             [
-//                 ids.progress_id,
-//                 applicant.stage,
-//                 applicant.status,
-//                 applicant.blacklisted_type || null,
-//                 applicant.reason || null,
-//             ]
-//         );
-
-//         // Insert tracking
-//         await connection.execute(
-//             `INSERT INTO ats_applicant_trackings (tracking_id, applicant_id, progress_id, created_at, created_by, updated_by, test_result, applied_source, referrer_name, company_id, position_id)
-//              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//             [
-//                 ids.tracking_id,
-//                 ids.applicant_id,
-//                 ids.progress_id,
-//                 applicant.date_applied,
-//                 applicant.created_by || CREATED_BY,
-//                 applicant.updated_by || UPDATED_BY,
-//                 applicant.test_result || null,
-//                 applicant.applied_source || null,
-//                 applicant.referrer_name || null,
-//                 applicant.company_id || COMPANY_ID,
-//                 applicant.position_id
-//             ]
-//         );
-
-//         // Insert applicant
-//         await connection.execute(
-//             `INSERT INTO ats_applicants (applicant_id, first_name, middle_name, last_name, contact_id, gender, birth_date, discovered_at, cv_link)
-//              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//             [
-//                 ids.applicant_id,
-//                 applicant.first_name,
-//                 applicant.middle_name || null,
-//                 applicant.last_name,
-//                 ids.contact_id,
-//                 applicant.gender || null,
-//                 applicant.birth_date || null,
-//                 applicant.discovered_at || null,
-//                 applicant.cv_link || null
-//             ]
-//         );
-
-//         // Insert contact info
-//         await connection.execute(
-//             `INSERT INTO ats_contact_infos (contact_id, applicant_id, mobile_number_1, mobile_number_2, email_1, email_2, email_3)
-//              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-//             [
-//                 ids.contact_id,
-//                 ids.applicant_id,
-//                 applicant.mobile_number_1 || null,
-//                 applicant.mobile_number_2 || null,
-//                 applicant.email_1,
-//                 applicant.email_2 || null,
-//                 applicant.email_3 || null
-//             ]
-//         );
-
-//         // Insert interview
-//         await connection.execute(
-//             `INSERT INTO ats_applicant_interviews (interview_id, tracking_id, interviewer_id, date_of_interview)
-//              VALUES (?, ?, ?, ?)`,
-//             [ids.interview_id, ids.tracking_id, null, null]
-//         );
-
-//         await connection.commit();
-//         return ids;
-//     } catch (error) {
-//         if (connection) await connection.rollback();
-//         console.error("Error inserting applicant:", error);
-//         throw error; // Re-throw to be caught by the calling function
-//     } finally {
-//         if (connection) connection.release();
-//     }
-// };
-
 const insertApplicant = async (applicant, user_id = null) => {
   const ids = {
     applicant_id: uuidv4(),
@@ -147,7 +52,7 @@ const insertApplicant = async (applicant, user_id = null) => {
           applicant.created_by || CREATED_BY,
           applicant.updated_by || UPDATED_BY,
           applicant.test_result || null,
-          applicant.applied_source || null,
+          applicant.applied_source.toUpperCase().replace(/ /g, "_") || null,
           applicant.referrer_name || null,
           applicant.company_id || COMPANY_ID,
           applicant.position_id,
@@ -170,7 +75,7 @@ const insertApplicant = async (applicant, user_id = null) => {
           ids.contact_id,
           applicant.gender || null,
           applicant.birth_date || null,
-          applicant.discovered_at || null,
+          applicant.discovered_at.toUpperCase().replace(/ /g, "_") || null,
           applicant.cv_link || null,
         ]
       );
@@ -324,4 +229,53 @@ const getApplicant = async (applicant_id) => {
   }
 };
 
-module.exports = { insertApplicant, getAllApplicants, getApplicant };
+const getBlackListedApplicants = async () => {
+  const sql = `
+              SELECT *
+              FROM ats_applicants a
+              LEFT JOIN ats_contact_infos c
+                  ON a.applicant_id = c.applicant_id
+              LEFT JOIN ats_applicant_trackings t
+                  ON a.applicant_id = t.applicant_id
+              LEFT JOIN ats_applicant_progress p
+                  ON t.progress_id = p.progress_id
+              WHERE p.status = 'BLACKLISTED';
+  `;
+
+  try {
+    const [results, fields] = await pool.execute(sql);
+    return results
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+}
+
+const existingApplication = async (applicant) => {
+  try {
+    const sql = `
+    SELECT 
+        a.*, 
+        c.*, 
+        p.*, 
+        j.*
+    FROM ats_applicants a
+    LEFT JOIN ats_contact_infos c
+        ON a.applicant_id = c.applicant_id
+    LEFT JOIN ats_applicant_trackings t
+        ON a.applicant_id = t.applicant_id
+    LEFT JOIN ats_applicant_progress p
+        ON t.progress_id = p.progress_id
+    LEFT JOIN sl_company_jobs j
+        ON t.position_id = j.job_id
+    WHERE a.first_name = ? AND a.last_name = ? AND c.email_1 = ? AND c.mobile_number_1 = ?
+  `;
+    const values = [applicant.first_name, applicant.last_name, applicant.email_1, applicant.mobile_number_1];
+    const [result] = await pool.execute(sql, values);
+    return result;
+  } catch (error) {
+    console.log(error.message);
+    return [];
+  }
+}
+module.exports = { insertApplicant, getAllApplicants, getApplicant, getBlackListedApplicants, existingApplication };
