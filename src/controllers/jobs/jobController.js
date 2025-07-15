@@ -249,6 +249,9 @@ exports.insertJob = async (req, res) => {
       isOpen,
       isShown,
       userId,
+      responsibilityHeader,
+      requirementHeader,
+      qualificationHeader,
     } = req.body;
 
     if (
@@ -283,6 +286,9 @@ exports.insertJob = async (req, res) => {
       is_shown: isShown,
       created_at: now(),
       created_by: userId,
+      responsibility_header: responsibilityHeader,
+      requirement_header: requirementHeader,
+      qualification_header: qualificationHeader,
     };
 
     console.log(newJob);
@@ -314,6 +320,9 @@ exports.updateJob = async (req, res) => {
       preferredQualification,
       isOpen,
       isShown,
+      responsibilityHeader,
+      requirementHeader,
+      qualificationHeader,
       //user_id,
     } = req.body;
 
@@ -347,6 +356,9 @@ exports.updateJob = async (req, res) => {
       preferred_qualification: preferredQualification,
       is_open: isOpen,
       is_shown: isShown,
+      responsibility_header: responsibilityHeader,
+      requirement_header: requirementHeader,
+      qualification_header: qualificationHeader,
     };
 
     const updatedJob = await Job.updateJob(jobId, updates);
