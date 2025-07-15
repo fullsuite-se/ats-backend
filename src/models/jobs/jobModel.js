@@ -157,10 +157,10 @@ const Job = {
 
   getJobDetails: async (job_id) => {
     const query = `
-      SELECT 
+         SELECT 
         job_id AS jobId, title AS jobTitle, industry_name AS industryName, employment_type AS employmentType,
         setup_name AS setupName, description, salary_min AS salaryMin, salary_max AS salaryMax, responsibility,
-        requirement, preferred_qualification AS preferredQualification, is_open AS isOpen
+        requirement, preferred_qualification AS preferredQualification, is_open AS isOpen, responsibility_header AS responsibilityHeader, requirement_header AS requirementHeader, qualification_header AS qualificationHeader
       FROM sl_company_jobs
       JOIN sl_company_jobs_setups ON sl_company_jobs.setup_id = sl_company_jobs_setups.setup_id
       JOIN sl_job_industries ON sl_company_jobs.industry_id = sl_job_industries.job_ind_id
