@@ -278,4 +278,81 @@ const existingApplication = async (applicant) => {
     return [];
   }
 }
-module.exports = { insertApplicant, getAllApplicants, getApplicant, getBlackListedApplicants, existingApplication };
+
+// Delete applicant and related data
+const deleteApplicant = async (applicant_id) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    // First, get tracking and contact IDs for this applicant
+    const [[ids]] = await connection.execute(
+      `SELECT t.tracking_id, p.progress_id, a.contact_id, i.interview_id
+       FROM ats_applicants a
+       LEFT JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
+       LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+       LEFT JOIN ats_applicant_interviews i ON t.tracking_id = i.tracking_id
+       WHERE a.applicant_id = ?`,
+      [applicant_id]
+    );
+
+    if (!ids) {
+      return false; // applicant not found
+    }
+
+    // Delete interview (if exists)
+    await connection.execute(
+      `DELETE FROM ats_applicant_interviews WHERE tracking_id = ?`,
+      [ids.tracking_id]
+    );
+
+    // Delete status history linked to progress_id (MUST come before deleting progress)
+    await connection.execute(
+      `DELETE FROM ats_applicant_status_history WHERE progress_id = ?`,
+      [ids.progress_id]
+    );
+
+    // Delete contact info
+    await connection.execute(
+      `DELETE FROM ats_contact_infos WHERE contact_id = ?`,
+      [ids.contact_id]
+    );
+
+    // Delete tracking
+    await connection.execute(
+      `DELETE FROM ats_applicant_trackings WHERE applicant_id = ?`,
+      [applicant_id]
+    );
+
+    // Delete progress
+    await connection.execute(
+      `DELETE FROM ats_applicant_progress WHERE progress_id = ?`,
+      [ids.progress_id]
+    );
+
+    // Delete applicant
+    const [result] = await connection.execute(
+      `DELETE FROM ats_applicants WHERE applicant_id = ?`,
+      [applicant_id]
+    );
+
+    await connection.commit();
+    return result.affectedRows > 0;
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("Error deleting applicant:", error.message);
+    throw error;
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+module.exports = { 
+  insertApplicant, 
+  getAllApplicants, 
+  getApplicant, 
+  getBlackListedApplicants, 
+  existingApplication, 
+  deleteApplicant 
+};

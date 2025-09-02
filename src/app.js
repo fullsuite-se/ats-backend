@@ -44,6 +44,7 @@ const editApplicantRoutes = require("./routes/applicant/editApplicantRoutes");
 const updateStatusRoutes = require("./routes/applicant/updateStatusRoutes");
 const checkApplicantRoutes = require("./routes/applicant/checkApplicantRoutes");
 const pendingApplicantRoutes = require("./routes/applicant/pendingApplicantRoutes");
+const deleteApplicantRoutes = require("./routes/applicant/deleteApplicantRoutes");
 
 // interview
 const interviewRoutes = require("./routes/interview/interviewRoutes");
@@ -124,6 +125,8 @@ app.use("/jobs", jobRoutes);
 app.use("/setups", setupRoutes);
 app.use("/user-configuration", userConfigurationRoutes);
 app.use("/password", passwordRoutes);
+
+app.use("/applicants/delete", deleteApplicantRoutes);
 
 const verifyToken = require("./middlewares/verifyToken");
 
