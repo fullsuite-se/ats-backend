@@ -313,3 +313,28 @@ exports.getApplicantsFilterForExelExport = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.deleteApplicant = async (req, res) => {
+  try {
+    const { applicant_id } = req.params;
+
+    if (!applicant_id) {
+      return res.status(400).json({ message: "Applicant ID is required" });
+    }
+
+    const deleted = await applicantModel.deleteApplicant(applicant_id);
+
+    if (deleted) {
+      return res
+        .status(200)
+        .json({ message: "Applicant deleted successfully", applicant_id });
+    } else {
+      return res.status(404).json({ message: "Applicant not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting applicant:", error);
+    res
+      .status(500)
+      .json({ message: "Error deleting applicant", error: error.message });
+  }
+};
