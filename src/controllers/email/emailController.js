@@ -121,20 +121,36 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
         let email_body = `
             <div>
                 <p>Hi ${applicantData.first_name},</p>
-    
-                <p>Thank you for your interest in the ${applicantData.job_title} position at ${userData.company_name}.</p>
-    
-                <p>As part of our hiring process, we would like you to complete a short assessment to help us better understand your skills and qualifications.</p>
-    
-                <p>Please use the link to access and complete the assessment: <a href="${applicantData.assessment_url}">Start Assessment</a></p>
-    
-                <p>If you have any questions or encounter any issues, feel free to reply to this email.</p>
-    
-                <p>We look forward to reviewing your submission!</p>
+
+                <p>We have received your application. Thank you for your recent application to join our team here at FullSuite. 
+                We are excited to find out if the #suitelife is the workplace you have been searching for and if you are the next Suitelifer 
+                we will be so excited about you joining our team!</p>
+
+                <p>To kick off the evaluation process, we need you to undergo an assessment test. Rest assured, this test is not a zero-sum exercise 
+                and there is no specific passing rate you need to hit to move to the next step as we take the result of this test alongside the interview 
+                assessments to get a holistic review of your culture fit with FullSuite.</p>
+
+                <p>Click the link of the test corresponding to the position you are applying for:</p>
+
+                <p>Please use the link to access and complete the assessment: 
+                <a href="${applicantData.assessment_url}">Start Assessment</a></p>
+
+                <p>The entire test may take you between 40–80 minutes. Some candidates may find the exercise a bit too fast for comfort, 
+                but our advice is that you answer each question as honestly as you can.</p>
+
+                <p>For more information about our company and what we do, kindly visit our website here: 
+                <a href="https://fullsuite.ph/">https://fullsuite.ph/</a></p>
+
+                <p>We look forward to reviewing your completed tests and getting to know you better.</p>
             </div>
         `;
 
-        const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
+        const recipientEmails = [
+            applicantData.email_1, 
+            applicantData.email_2, 
+            applicantData.email_3
+        ].filter(Boolean);
+
         const emailSignatureString = emailSignature(userData);
         email_body = email_body + emailSignatureString;
 
@@ -143,7 +159,7 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
             from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
             cc: "hireme@getfullsuite.com",
-            bcc: userData.user_email, // 👈 ensures sender also gets inbox copy
+            bcc: userData.user_email, // ensures sender also gets inbox copy
             subject: email_subject,
             html: email_body,
         };
@@ -163,7 +179,6 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
         return null;
     }
 };
-
 
 //endpoint that only calls the sending processes. 
 exports.emailApplicantTestAssessment = async (req, res) => {
