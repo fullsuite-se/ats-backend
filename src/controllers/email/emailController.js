@@ -107,8 +107,7 @@ exports.emailApplicant = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
-// the function that actually sent the test assessment.
-// the function that actually sent the test assessment.
+// the function that actually sends the test assessment
 exports.emailTestAssessment = async (applicant_id, user_id) => {
     try {
         let applicantData = await applicantModel.getApplicant(applicant_id);
@@ -143,7 +142,8 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
         const mailOptions = {
             from: `"${userData.company_name}" <${userData.user_email}>`,
             to: recipientEmails,
-            cc: "hireme@getfullsuite.com", 
+            cc: "hireme@getfullsuite.com",
+            bcc: userData.user_email, // 👈 ensures sender also gets inbox copy
             subject: email_subject,
             html: email_body,
         };
@@ -155,7 +155,7 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
         });
         const info = await transporter.sendMail(mailOptions);
 
-        console.log(`✅ Email sent successfully to: ${recipientEmails.join(", ")}`);
+        console.log(`✅ Email sent successfully to: ${recipientEmails.join(", ")}, CC: hireme@getfullsuite.com, BCC: ${userData.user_email}`);
 
         return info.response;
     } catch (error) {
