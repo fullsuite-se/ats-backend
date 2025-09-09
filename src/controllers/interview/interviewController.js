@@ -10,8 +10,6 @@ exports.addInterview = async (req, res) => {
         const interview = req.body;
         const interview_id = uuidv4();
 
-        console.log(interview);
-
 
         let sql = `INSERT INTO ats_applicant_interviews (interview_id, tracking_id, interviewer_id, date_of_interview)
                      VALUES (?, ?, ?, ?)`;
@@ -30,8 +28,7 @@ exports.addInterview = async (req, res) => {
 exports.getInterview = async (req, res) => {
     try {
         const tracking_id = req.query.tracking_id;
-        console.log(tracking_id);
-
+    
         if (!tracking_id) {
             return res.status(400).json({ message: "Missing tracking_id parameter" });
         }
@@ -100,7 +97,7 @@ exports.exportDiscussionInterview = async (req, res) => {
     try {
         const applicant_id = req.params.applicant_id
         const tracking_id = req.params.tracking_id;
-        console.log('params', req.params);
+ 
 
 
         if (!tracking_id) {
@@ -118,12 +115,11 @@ exports.exportDiscussionInterview = async (req, res) => {
                     .filter(note => note !== null)  // Remove null values
                     .sort((a, b) => new Date(a.noted_at) - new Date(b.noted_at)) // Sort by noted_at
         }));
-        console.log(formattedResults);
+
 
 
         const applicant = await applicantModel.getApplicant(applicant_id);
-        console.log(applicant);
-
+      
         res.status(200).json({ formattedResults, applicant });
     } catch (error) {
         console.error(error);

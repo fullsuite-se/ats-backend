@@ -18,12 +18,12 @@ const USER_ID = process.env.USER_ID;
 const compare = (applicant, applicantsFromDB) => {
   const possibleDuplicates = [];
 
-  //console.log(applicant.mobile_number_2);
+
 
   applicantsFromDB.forEach((applicantFromDb) => {
     const similarity = [];
 
-    //console.log(applicant.applicant_id + ": "  +applicantFromDb.applicant_id);
+    
 
     const applicantFullname = `${applicant.first_name} ${
       applicant.middle_name ?? ""
@@ -182,7 +182,6 @@ exports.checkDuplicates = async (req, res) => {
 
 exports.addApplicant = async (req, res) => {
   try {
-    console.log("Request body:", req.body);
 
     if (!req.body.applicant) {
       return res.status(400).json({ message: "Applicant data is missing" });
@@ -233,14 +232,13 @@ exports.uploadApplicants = [
   upload.none(),
   async (req, res) => {
     try {
-      console.log("Request body received:", req.body);
+     
       if (!req.body.applicants) {
         return res
           .status(400)
           .json({ message: "No applicants data found in request" });
       }
       const applicants = JSON.parse(req.body.applicants);
-      console.log("Parsed applicants:", applicants);
       const positions = await positionModel.getAllPosiitons();
       if (!Array.isArray(applicants)) {
         return res
@@ -258,7 +256,6 @@ exports.uploadApplicants = [
           applicant.position_id = null;
         }
       });
-      console.log(applicants);
       const flagged = [];
       const successfulInserts = [];
       const failedInserts = [];
@@ -278,13 +275,9 @@ exports.uploadApplicants = [
 
             const isInserted = await applicantModel.insertApplicant(applicant);
             if (isInserted) {
-              console.log("Applicant inserted successfully:", applicant);
               successfulInserts.push(applicant);
             } else {
-              // Log each failed applicant with error reason
-              console.log(
-                `Failed to insert applicant: ${applicant.first_name} ${applicant.last_name} (${applicant.email_1}). Reason: Database insert returned false`
-              );
+              
               failedInserts.push({
                 applicant,
                 reason: "Database insert returned false",

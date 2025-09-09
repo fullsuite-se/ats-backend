@@ -21,7 +21,6 @@ exports.getAllIndustriesHR = async () => {
     JOIN hris_user_infos ON hris_user_infos.user_id = sl_job_industries.created_by
   `;
   const [industries] = await pool.query(query);
-  console.log(industries)
   return industries;
 };
 
@@ -60,7 +59,6 @@ exports.insertIndustry = async (industryName, assessmentUrl, userId) => {
 };
 
 exports.updateIndustry = async (jobIndId, industryName, assessmentUrl, userId) => {
-  console.log(jobIndId);
   
   const query = `
     UPDATE sl_job_industries SET industry_name = ?, assessment_url = ?, created_by = ?, created_at = ? WHERE job_ind_id = ?
@@ -76,3 +74,4 @@ exports.deleteIndustry = async (industry_id) => {
   const [result] = await pool.query(query, [industry_id]);
   return result.affectedRows;
 };
+  

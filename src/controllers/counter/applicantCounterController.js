@@ -62,6 +62,5 @@ exports.getApplicantCount = async (req, res) => {
 exports.tryAPI = (req, res) => {
     const subject  = req.body
     console.log(subject)
-    //console.log("subject is: " + subject)
     res.json({"message": "try"})
 }

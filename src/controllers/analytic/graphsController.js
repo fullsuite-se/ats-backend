@@ -191,7 +191,6 @@ exports.applicationTrend = async (req, res) => {
             ${orderBy}
         `;
 
-        console.log('Application Trend Query:', sql, 'Params:', queryParams);
         const [trend] = await pool.execute(sql, queryParams);
 
         const result = {};
@@ -214,7 +213,6 @@ exports.applicationTrend = async (req, res) => {
 
         // Total applications
         const totalSql = `SELECT COUNT(*) AS total FROM ats_applicant_trackings t ${whereClause}`;
-        console.log('Application Trend Total Query:', totalSql, 'Params:', queryParams);
         const [[{ total }]] = await pool.execute(totalSql, queryParams);
 
         res.status(200).json({
@@ -262,7 +260,7 @@ exports.applicantSources = async (req, res) => {
             ${whereClause}
         `;
 
-        console.log('Applicant Sources Total Query:', totalSql, 'Params:', queryParams);
+
         const [totalResult] = await pool.execute(totalSql, queryParams);
         const totalApplicants = totalResult[0]?.total || 0;
 
@@ -297,7 +295,7 @@ exports.applicantSources = async (req, res) => {
 
         // Put totalApplicants as first param
         const sourceParams = [totalApplicants, ...queryParams];
-        console.log('Applicant Sources Query:', sourcesSql, 'Params:', sourceParams);
+      
 
         const [results] = await pool.execute(sourcesSql, sourceParams);
 
@@ -358,7 +356,6 @@ exports.dropoffRate = async (req, res) => {
             ORDER BY YEAR(p.updated_at), MONTH(p.updated_at)
         `;
 
-        console.log('Dropoff Rate Monthly Query:', monthlySql, 'Params:', queryParams);
         const [monthlyData] = await pool.execute(monthlySql, queryParams);
 
         // Get overall totals for comparison with the same filters
@@ -373,7 +370,7 @@ exports.dropoffRate = async (req, res) => {
             ${whereClause}
         `;
 
-        console.log('Dropoff Rate Total Query:', totalSql, 'Params:', queryParams);
+
         const [totalResults] = await pool.execute(totalSql, queryParams);
 
         res.status(200).json({
