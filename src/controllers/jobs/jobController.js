@@ -182,11 +182,9 @@ exports.getJobAssessmentUrl = async (req, res) => {
   try {
     const { job_id } = req.body;
 
-    console.log(job_id);
-
+ 
     const assessmentUrl = await Job.getJobAssessmentUrl(job_id);
 
-    console.log(assessmentUrl);
 
     res.status(200).json({ success: true, data: assessmentUrl });
   } catch (err) {
@@ -290,8 +288,6 @@ exports.insertJob = async (req, res) => {
       requirement_header: requirementHeader,
       qualification_header: qualificationHeader,
     };
-
-    console.log(newJob);
 
     await Job.insertJob(newJob);
 

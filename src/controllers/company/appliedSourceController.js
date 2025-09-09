@@ -11,10 +11,10 @@ exports.getAllAppliedSource = async (req, res) => {
       .split(",")
       .map((value) => value.trim().replace(/'/g, ""))
       .filter((value) => value);
-    //console.log(enumValues);
+  
     res.json(enumValues);
   } else {
-    //console.log('No ENUM values found');
+
     res.json([]);
   }
 };

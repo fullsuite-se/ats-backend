@@ -6,7 +6,7 @@ const applicantModel = require("../../models/applicant//applicantModel");
 const userModel = require("../../models/user/userModel");
 
 const emailSignature = (userData) => {
-    console.log('userdata: ', userData);
+
     // This returns formatted HTML data for the footer. 
     const fullName = `${userData.first_name} ${userData.last_name}`;
     const jobTitle = userData.job_title; // Assuming title since it's not in data
@@ -72,10 +72,10 @@ exports.emailApplicant = async (req, res) => {
 
         let applicantData = await applicantModel.getApplicant(applicant_id);
         applicantData = applicantData[0];
-        console.log('applicant data', applicantData);
+      
 
         const userData = await userModel.getUserInfo(user_id);
-        console.log('user data', userData);
+
 
 
         const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
@@ -112,11 +112,10 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
     try {
         let applicantData = await applicantModel.getApplicant(applicant_id);
         applicantData = applicantData[0];
-        console.log('applicant data', applicantData);
+        
 
         const userData = await userModel.getUserInfo(user_id);
-        console.log('user data', userData);
-
+       
         let email_subject = `Test Assessment`;
         let email_body = `
             <div>
@@ -218,8 +217,6 @@ exports.notifyUsersNewApplicant = async (applicant_id) => {
         ]);
 
         const applicantData = applicantArray[0];
-        console.log('applicant data', applicantData);
-
         const emailSubject = `📩 New Applicant for <strong>${applicantData.job_title}</strong> Position`;
 
         const emailBody = `

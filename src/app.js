@@ -132,8 +132,6 @@ const verifyToken = require("./middlewares/verifyToken");
 
 app.get("/protected", verifyToken, (req, res) => {
   const { user_id, user_email } = req.user;
-  console.log(user_id);
-  console.log(user_email);
 
   res.json({ message: "okay" });
 });

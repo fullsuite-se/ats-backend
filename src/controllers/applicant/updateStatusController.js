@@ -110,9 +110,6 @@ exports.updateApplicantStatus = async (req, res) => {
     reason,
     reason_for_rejection,
   } = req.body;
-  console.log(req.body);
-  console.log(blacklisted_type);
-  console.log(reason);
 
   const isSuccess = await updateStatus(
     progress_id,

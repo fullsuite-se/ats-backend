@@ -106,8 +106,6 @@ exports.confirmPendingApplicant = async (req, res) => {
         //extract only the applicant
         const applicant = pendingApplicant.applicant;
 
-        console.log(applicant);
-
         const email_subject = `Your Job Application Has Been Accepted – Next Steps`;
         const email_body = `
             <p>Dear Applicant,</p>
