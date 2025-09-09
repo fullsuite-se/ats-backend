@@ -60,7 +60,7 @@ exports.checkExistingApplication = async (req, res) => {
         const result = await applicantModel.existingApplication(applicant);
 
         if (result.length > 0) {
-            console.log('existing applicant', result);
+          
 
             return res.status(200).json({ message: "existing application", isExisting: true, existingRecord: result });
         }

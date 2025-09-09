@@ -1,7 +1,6 @@
 const pool = require("../../config/db");
 
 const editApplicant = async (applicant) => {
-console.log("applicant" + JSON.stringify(applicant));
   try {
     let sql = `
       UPDATE ats_applicants 

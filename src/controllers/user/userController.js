@@ -124,20 +124,14 @@ exports.getAllUserAccounts = async (req, res) => {
 
 exports.updateUserAccount = async (req, res) => {
     try {
-        console.log("REQUEST PARAMS:", req.params);
-        console.log("REQUEST BODY:", req.body);
 
         const user_id = req.params.id; // Assuming the user ID is passed as a URL parameter
         const data = req.body;
-
-        console.log("USER ID:", user_id);
-        console.log("JOB TITLE ID:", data.job_title_id); // Log job_title_id
 
         const hashedPassword = data.user_password
             ? await bcrypt.hash(data.user_password, 10)
             : null;
 
-        console.log("HASHED PASSWORD:", hashedPassword);
 
         // Dynamically construct the SET clause
         const setClause = `user_email = ?${hashedPassword ? ", user_password = ?" : ""}`;
@@ -150,12 +144,9 @@ exports.updateUserAccount = async (req, res) => {
             ? [data.user_email, hashedPassword, user_id]
             : [data.user_email, user_id];
 
-        console.log("UPDATE USER ACCOUNT SQL:", updateUserAccountSQL);
-        console.log("USER ACCOUNT VALUES:", userAccountValues);
 
         await pool.execute(updateUserAccountSQL, userAccountValues);
 
-        console.log("User account updated successfully.");
 
         // Update user designations
         const updateUserDesignationsSQL = `
@@ -165,27 +156,21 @@ exports.updateUserAccount = async (req, res) => {
         `;
         const userDesignationsValues = [data.company_id, data.job_title_id, user_id];
 
-        console.log("UPDATE USER DESIGNATIONS SQL:", updateUserDesignationsSQL);
-        console.log("USER DESIGNATIONS VALUES:", userDesignationsValues);
 
         await pool.execute(updateUserDesignationsSQL, userDesignationsValues);
 
-        console.log("User designations updated successfully.");
+        
 
-        // Update user access permissions
-        console.log("Deleting existing user access permissions...");
+    
         await pool.execute(
             `DELETE FROM hris_user_access_permissions WHERE user_id = ?`,
             [user_id]
         );
 
-        console.log("Existing user access permissions deleted.");
-
         let service_feature_ids;
         try {
             service_feature_ids = JSON.parse(data.service_feature_ids);
-            console.log("PARSED SERVICE FEATURE IDS:", service_feature_ids);
-
+        
             if (!Array.isArray(service_feature_ids)) {
                 console.error("service_feature_ids is not an array.");
                 return res.status(400).json({ message: "service_feature_ids must be an array." });
@@ -195,9 +180,8 @@ exports.updateUserAccount = async (req, res) => {
             return res.status(400).json({ message: "Invalid JSON format in service_feature_ids." });
         }
 
-        console.log("Inserting new user access permissions...");
         await Promise.all(service_feature_ids.map(service_feature_id => {
-            console.log("Inserting service_feature_id:", service_feature_id);
+       
             return pool.execute(
                 `INSERT INTO hris_user_access_permissions (user_access_permission_id, user_id, service_feature_id) VALUES (?, ?, ?)`,
                 [uuidv4(), user_id, service_feature_id]
@@ -225,10 +209,6 @@ exports.updateUserAccount = async (req, res) => {
             data.birthdate || null,
             user_id
         ];
-
-        console.log("UPDATE USER INFOS SQL:", updateUserInfosSQL);
-        console.log("USER INFOS VALUES:", userInfosValues);
-
         await pool.execute(updateUserInfosSQL, userInfosValues);
 
         console.log("User infos updated successfully.");
@@ -246,23 +226,12 @@ exports.createUserAccount = async (req, res) => {
         const user_info_id = uuidv4();
         const user_access_permision_id = uuidv4();
         const user_designation_id = uuidv4();
-
-        console.log("REQUEST BODY:", data);
-        console.log("GENERATED USER ID:", user_id);
-        console.log("GENERATED USER INFO ID:", user_info_id);
-        console.log("GENERATED USER ACCESS PERMISSION ID:", user_access_permision_id);
-        console.log("GENERATED USER DESIGNATION ID:", user_designation_id);
-
         const hashedPassword = await bcrypt.hash(data.user_password, 10);
-        console.log("HASHED PASSWORD:", hashedPassword);
-
         // Insert into user accounts
         const insertUserAccountSQL = `
             INSERT INTO hris_user_accounts (user_id, user_email, user_password) VALUES (?, ?, ?)
         `;
         const userAccountValues = [user_id, data.user_email, hashedPassword];
-        console.log("INSERT USER ACCOUNT SQL:", insertUserAccountSQL);
-        console.log("USER ACCOUNT VALUES:", userAccountValues);
 
         await pool.execute(insertUserAccountSQL, userAccountValues);
         console.log("User account inserted successfully.");
@@ -272,9 +241,7 @@ exports.createUserAccount = async (req, res) => {
             INSERT INTO hris_user_designations (user_designation_id, user_id, company_id, job_title_id) VALUES (?, ?, ?, ?)
         `;
         const userDesignationValues = [user_designation_id, user_id, data.company_id, data.job_title_id];
-        console.log("INSERT USER DESIGNATION SQL:", insertUserDesignationSQL);
-        console.log("USER DESIGNATION VALUES:", userDesignationValues);
-
+     
         await pool.execute(insertUserDesignationSQL, userDesignationValues);
         console.log("User designation inserted successfully.");
 
@@ -282,7 +249,7 @@ exports.createUserAccount = async (req, res) => {
         let service_feature_ids;
         try {
             service_feature_ids = JSON.parse(data.service_feature_ids);
-            console.log("PARSED SERVICE FEATURE IDS:", service_feature_ids);
+           
 
             if (!Array.isArray(service_feature_ids)) {
                 console.error("service_feature_ids is not an array.");
@@ -295,13 +262,12 @@ exports.createUserAccount = async (req, res) => {
 
         console.log("Inserting user access permissions...");
         await Promise.all(service_feature_ids.map(service_feature_id => {
-            console.log("Inserting service_feature_id:", service_feature_id);
+          
             const insertUserAccessPermissionSQL = `
                 INSERT INTO hris_user_access_permissions (user_access_permission_id, user_id, service_feature_id) VALUES (?, ?, ?)
             `;
             const userAccessPermissionValues = [uuidv4(), user_id, service_feature_id];
-            console.log("INSERT USER ACCESS PERMISSION SQL:", insertUserAccessPermissionSQL);
-            console.log("USER ACCESS PERMISSION VALUES:", userAccessPermissionValues);
+       
 
             return pool.execute(insertUserAccessPermissionSQL, userAccessPermissionValues);
         }));
@@ -325,9 +291,7 @@ exports.createUserAccount = async (req, res) => {
             data.contact_number || null,
             data.birthdate || null
         ];
-        console.log("INSERT USER INFO SQL:", insertUserInfoSQL);
-        console.log("USER INFO VALUES:", userInfoValues);
-
+     
         await pool.execute(insertUserInfoSQL, userInfoValues);
         console.log("User info inserted successfully.");
 
@@ -356,8 +320,6 @@ exports.activateUserAccount = async (req, res) => {
     try {
         const { user_id } = req.params; // Assuming the user ID is passed as a URL parameter
 
-        console.log("Activating user account for user_id:", user_id);
-
         // Update the is_deactivated field to 0 (active)
         const activateUserSQL = `
             UPDATE hris_user_accounts 
@@ -372,7 +334,6 @@ exports.activateUserAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found or already active" });
         }
 
-        console.log("User account activated successfully for user_id:", user_id);
 
         return res.status(200).json({ message: "User account activated successfully" });
     } catch (error) {
@@ -384,8 +345,6 @@ exports.activateUserAccount = async (req, res) => {
 exports.deactivateUserAccount = async (req, res) => {
     try {
         const { user_id } = req.params;
-
-        console.log("Deactivating user account for user_id:", user_id);
 
         const deactivateUserSQL = `
             UPDATE hris_user_accounts 
@@ -400,7 +359,6 @@ exports.deactivateUserAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found or already deactivated" });
         }
 
-        console.log("User account deactivated successfully for user_id:", user_id);
 
         return res.status(200).json({ message: "User account deactivated successfully" });
     } catch (error) {

@@ -17,7 +17,7 @@ exports.getApplicantStatusHistory = async (req, res) => {
         `;
 
     const [results] = await pool.execute(sql, [progressId]);
-    console.log("Status history results:", results);
+
 
     return res.status(200).json(results);
   } catch (error) {
@@ -33,7 +33,7 @@ exports.updateApplicantStatusHistory = async (req, res) => {
   const { id } = req.params;
   const { changed_at, edited, deleted, status, changed_by } = req.body;
 
-  console.log("Request body:", req.body);
+
 
   try {
     const sql = `
@@ -122,7 +122,7 @@ exports.addInitialStatusHistory = async (req, res) => {
 
     const [results] = await pool.query(sql, [values]);
 
-    console.log("Status history inserted:", results);
+
 
     return res
       .status(201)

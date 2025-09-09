@@ -24,7 +24,6 @@ const generalNotification = async () => {
 
     try {
         const [rows] = await pool.execute(sql);
-        console.log('notif', rows);
 
         return rows;
     } catch (error) {

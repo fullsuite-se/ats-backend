@@ -4,7 +4,7 @@ const applicantModel = require("../../models/applicant/applicantModel");
 exports.searchApplicant = async (req, res) => {
   try {
     const filters = req.query;
-    console.log(filters);
+
 
     const conditions = [];
     const values = [];
@@ -105,7 +105,7 @@ exports.getAllApplicants = async (req, res) => {
 //applicants/
 exports.getAllApplicantsPagination = async (req, res) => {
   try {
-    console.log("running...");
+
 
     // Extract pagination parameters from the request query
     let { page, limit } = req.query;
@@ -157,7 +157,7 @@ exports.getApplicantsFilter = async (req, res) => {
   const conditions = [];
   const values = [];
 
-  console.log(filters);
+
 
   if (filters.month) {
     conditions.push("MONTHNAME(t.created_at)= ?");
@@ -235,13 +235,11 @@ exports.getApplicant = async (req, res) => {
 
 
 exports.getApplicantsFilterForExelExport = async (req, res) => {
-  console.log('query params: ', req.query);
 
   const filters = req.query;
   const conditions = [];
   const values = [];
 
-  console.log(filters);
 
   if (filters.month) {
     conditions.push("MONTHNAME(t.created_at)= ?");
