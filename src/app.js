@@ -33,7 +33,9 @@ app.use(
 // Cron Jobs
 const updateStatusCronJob = require("./controllers/cronjob/updateStatus");
 updateStatusCronJob();
-
+//calendar
+const calendarRoutes = require("./routes/calendar/calendarRoutes");
+app.use("/calendar", calendarRoutes);
 // auth
 const loginRoutes = require("./routes/auth/loginRoutes");
 const registerRoutes = require("./routes/auth/registerRoutes");
