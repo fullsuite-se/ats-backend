@@ -63,50 +63,62 @@ exports.emailTemplates = async (req, res) => {
 };
 
 exports.emailApplicant = async (req, res) => {
-    try {
-        let { applicant_id, user_id, email_subject, email_body } = req.body;
+  try {
+    let { applicant_id, user_id, email_subject, email_body } = req.body;
 
-        if (!applicant_id || !email_subject || !email_body) {
-            return res.status(400).json({ message: "Missing required fields" });
-        }
-
-        let applicantData = await applicantModel.getApplicant(applicant_id);
-        applicantData = applicantData[0];
-      
-
-        const userData = await userModel.getUserInfo(user_id);
-
-
-
-        const recipientEmails = [applicantData.email_1, applicantData.email_2, applicantData.email_3].filter(Boolean);
-        const emailSignatureString = emailSignature(userData);
-        email_body = email_body + emailSignatureString;
-
-        const attachments = req.files ? req.files.map(file => ({
-            filename: file.originalname,
-            content: file.buffer,
-        })) : [];
-
-        // Create mail options
-        const mailOptions = {
-            from: `"${userData.company_name}" <${userData.user_email}>`,
-            to: recipientEmails,
-            subject: email_subject,
-            html: email_body,
-            attachments: attachments,
-
-        };
-
-        //create transporter
-        const transporter = createTransporter({ email_user: userData.user_email, email_pass: userData.app_password })
-        const info = await transporter.sendMail(mailOptions);
-
-        res.status(200).json({ message: "Email sent successfully", info: info.response });
-    } catch (error) {
-        console.error("Error sending email:", error);
-        res.status(500).json({ message: "Internal server error", error: error.message });
+    if (!applicant_id || !email_subject || !email_body) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
+
+    let applicantData = await applicantModel.getApplicant(applicant_id);
+    applicantData = applicantData[0];
+
+    const userData = await userModel.getUserInfo(user_id);
+
+    const recipientEmails = [
+      applicantData.email_1,
+      applicantData.email_2,
+      applicantData.email_3,
+    ].filter(Boolean);
+
+    const emailSignatureString = emailSignature(userData);
+    email_body = email_body + emailSignatureString;
+
+    const attachments = req.files
+      ? req.files.map((file) => ({
+          filename: file.originalname,
+          content: file.buffer,
+        }))
+      : [];
+
+    // Create mail options with CC & BCC
+    const mailOptions = {
+      from: `"${userData.company_name}" <${userData.user_email}>`,
+      to: recipientEmails,
+      cc: "hireme@getfullsuite.com",
+      bcc: userData.user_email,
+      subject: email_subject,
+      html: email_body,
+      attachments,
+    };
+
+    // create transporter
+    const transporter = createTransporter({
+      email_user: userData.user_email,
+      email_pass: userData.app_password,
+    });
+
+    const info = await transporter.sendMail(mailOptions);
+
+    res
+      .status(200)
+      .json({ message: "Email sent successfully", info: info.response });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 };
+
 // the function that actually sends the test assessment
 exports.emailTestAssessment = async (applicant_id, user_id) => {
     try {
