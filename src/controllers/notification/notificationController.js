@@ -1,7 +1,5 @@
 const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
-
-// localhost:5000/notification
 const generalNotification = async () => {
     const sql = `
         SELECT 
@@ -20,6 +18,7 @@ const generalNotification = async () => {
         LEFT JOIN sl_company_jobs j ON j.job_id = t.position_id
         LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
         WHERE n.is_viewed = 0
+        ORDER BY t.created_at DESC
         LIMIT 50
     `;
 
@@ -46,6 +45,7 @@ const atsHealthCheckNotification = async () => {
         LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
         WHERE t.updated_at < NOW() - INTERVAL 3 DAY 
         AND p.status NOT IN ('FOR_JOB_OFFER', 'JOB_OFFER_REJECTED', 'JOB_OFFER_ACCEPTED', 'FOR_FUTURE_POOLING', 'WITHDREW_APPLICATION', 'BLACKLISTED', 'GHOSTED', 'NOT_FIT')
+        ORDER BY t.updated_at DESC
         LIMIT 50
     `;
     try {
