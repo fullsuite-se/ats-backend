@@ -1,3 +1,4 @@
+// server.js
 const path = require("path");
 const fs = require("fs");
 const cors = require("cors");
@@ -13,41 +14,54 @@ const pool = require("./config/db");
 const express = require("express");
 const app = express();
 
+// --------------------- Middleware --------------------- //
+
+// Serve static files
 app.use(express.static(path.join(__dirname, "public")));
+
+// Parse requests
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json());
 
-// Disable CORS protection from this react project origin
+// --------------------- CORS Setup --------------------- //
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
-// disable cors protection from FS website.
-const CLIENT_ORIGIN_FS = process.env.CLIENT_ORIGIN_FS;
-app.use(
-  cors({
-    origin: [
-      CLIENT_ORIGIN,
-      CLIENT_ORIGIN_FS,
-      "http://localhost:5173",
-      "http://192.168.88.244",
-      "https://ats-interns.vercel.app",
-    ],
-    credentials: true,
+const CLIENT_ORIGIN_FS = process.env.CLIENT_ORIGIN_FS; 
+const CLIENT_ORIGIN_PREVIEW = process.env.CLIENT_ORIGIN_PREVIEW; 
 
-  
-  })
-);
+const allowedOrigins = [
+  CLIENT_ORIGIN,
+  CLIENT_ORIGIN_FS,
+  CLIENT_ORIGIN_PREVIEW,
+  "http://localhost:5173",
+  "http://192.168.88.244",
+];
 
-console.log("Client Origin: " + CLIENT_ORIGIN);
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 
-// Cron Jobs
+// Handle preflight requests for all routes
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
+console.log("Client Origin: ", CLIENT_ORIGIN);
+
+// --------------------- Cron Jobs --------------------- //
 const updateStatusCronJob = require("./controllers/cronjob/updateStatus");
 updateStatusCronJob();
 
-// auth
+// --------------------- Routes --------------------- //
+
+// Auth
 const loginRoutes = require("./routes/auth/loginRoutes");
 const registerRoutes = require("./routes/auth/registerRoutes");
-// applicant
+
+// Applicants
 const applicantRoutes = require("./routes/applicant/applicantRoutes");
 const addApplicantRoutes = require("./routes/applicant/addApplicantRoutes");
 const editApplicantRoutes = require("./routes/applicant/editApplicantRoutes");
@@ -56,109 +70,129 @@ const checkApplicantRoutes = require("./routes/applicant/checkApplicantRoutes");
 const pendingApplicantRoutes = require("./routes/applicant/pendingApplicantRoutes");
 const deleteApplicantRoutes = require("./routes/applicant/deleteApplicantRoutes");
 
-// interview
+// Interview
 const interviewRoutes = require("./routes/interview/interviewRoutes");
 
-// company
+// Company
 const positionRoutes = require("./routes/company/positionRoutes");
 const appliedSourceRoutes = require("./routes/company/appliedSourceRoutes");
 const discoveredSourceRoutes = require("./routes/company/discoveredSourceRoutes");
 
-// analytic
+// Analytics
 const metricRoutes = require("./routes/analytic/metricsRoutes");
 const graphsRoutes = require("./routes/analytic/graphsRoutes");
-
-// counter
-const applicantCounterRoutes = require("./routes/counter/applicantCounterRoute");
-
-// notification
-const notificationRoutes = require("./routes/notification/notificationRoutes");
-
-// email
-const emailRoutes = require("./routes/email/emailRoutes");
-
-// user
-const userRoutes = require("./routes/user/userRoutes");
-
-// misc (for fetching config from db)
-const statusRoutes = require("./routes/status/statusRoutes");
-
-// upload
-const uploadRoutes = require("./routes/upload/uploadRoutes");
-
-// industries
-const industryRoutes = require("./routes/jobs/industryRoutes");
-
-// jobs
-const jobRoutes = require("./routes/jobs/jobRoutes");
-
-// setups
-const setupRoutes = require("./routes/jobs/setupRoutes");
-
-// configuration
-const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
-
-// status history
-const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
-
-//dashboard
 const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
 
-//password - for password reset
+// Counter
+const applicantCounterRoutes = require("./routes/counter/applicantCounterRoute");
+
+// Notification
+const notificationRoutes = require("./routes/notification/notificationRoutes");
+
+// Email
+const emailRoutes = require("./routes/email/emailRoutes");
+
+// User
+const userRoutes = require("./routes/user/userRoutes");
+const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
+
+// Misc
+const statusRoutes = require("./routes/status/statusRoutes");
+
+// Upload
+const uploadRoutes = require("./routes/upload/uploadRoutes");
+
+// Industries & Jobs
+const industryRoutes = require("./routes/jobs/industryRoutes");
+const jobRoutes = require("./routes/jobs/jobRoutes");
+const setupRoutes = require("./routes/jobs/setupRoutes");
+
+// Status History
+const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
+
+// Password
 const passwordRoutes = require("./routes/password/passwordRoutes");
 
-//calendar
+// Calendar
 const calendarAuthRoutes = require("./routes/calendar/calendarAuthRoutes");
 const calendarRoutes = require("./routes/calendar/calendarRoutes");
 
-// Routes
+// --------------------- Apply Routes --------------------- //
+
+// Applicants
 app.use("/applicants/pending", pendingApplicantRoutes);
-app.use("/analytics/dashboard", dashboardRoutes);
-app.use("/applicant/status-history", statusHistoryRoutes);
 app.use("/applicants", applicantRoutes);
 app.use("/applicants/add", addApplicantRoutes);
 app.use("/applicants/check", checkApplicantRoutes);
 app.use("/applicant/edit", editApplicantRoutes);
 app.use("/applicant/update/status", updateStatusRoutes);
-app.use("/counter", applicantCounterRoutes);
-app.use("/interview", interviewRoutes);
+app.use("/applicants/delete", deleteApplicantRoutes);
+
+// Auth
 app.use("/auth", loginRoutes);
 app.use("/auth", registerRoutes);
-app.use("/notification", notificationRoutes);
+app.use("/auth", calendarAuthRoutes); // calendar auth
+
+// Analytics
+app.use("/analytics/dashboard", dashboardRoutes);
 app.use("/analytic/metrics", metricRoutes);
 app.use("/analytic/graphs", graphsRoutes);
+
+// Counter
+app.use("/counter", applicantCounterRoutes);
+
+// Interview
+app.use("/interview", interviewRoutes);
+
+// Notification
+app.use("/notification", notificationRoutes);
+
+// Email
 app.use("/email", emailRoutes);
+
+// Company
 app.use("/company", positionRoutes);
 app.use("/company/sources", appliedSourceRoutes);
 app.use("/company/discovered", discoveredSourceRoutes);
+
+// User
 app.use("/user", userRoutes);
+app.use("/user-configuration", userConfigurationRoutes);
+
+// Misc
 app.use("/status", statusRoutes);
+
+// Upload
 app.use("/upload", uploadRoutes);
+
+// Industries & Jobs
 app.use("/industries", industryRoutes);
 app.use("/jobs", jobRoutes);
 app.use("/setups", setupRoutes);
-app.use("/user-configuration", userConfigurationRoutes);
+
+// Status History
+app.use("/applicant/status-history", statusHistoryRoutes);
+
+// Password
 app.use("/password", passwordRoutes);
-app.use("/auth", calendarAuthRoutes); //calendar auth
-app.use("/api/calendar", calendarRoutes); //calendar
 
-app.use("/applicants/delete", deleteApplicantRoutes);
+// Calendar
+app.use("/api/calendar", calendarRoutes);
 
+// --------------------- Protected Route --------------------- //
 const verifyToken = require("./middlewares/verifyToken");
-
 app.get("/protected", verifyToken, (req, res) => {
   const { user_id, user_email } = req.user;
-
-  res.json({ message: "okay" });
+  res.json({ message: "okay", user_id, user_email });
 });
 
-// Function for testing if connected to the database and call it when server starts
+// --------------------- Database Test --------------------- //
 const testConnection = async () => {
   try {
-    const results = await pool.query("SELECT * FROM ats_applicants");
-    console.log("connected to database");
+    const results = await pool.query("SELECT * FROM ats_applicants LIMIT 1");
+    console.log("✅ Connected to database");
   } catch (error) {
-    console.error(error.message);
+    console.error("❌ DB Connection Error:", error.message);
   }
 };
 
