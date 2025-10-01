@@ -167,10 +167,10 @@ exports.getApplicantsFilter = async (req, res) => {
     conditions.push("YEAR(t.created_at) = ?");
     values.push(filters.year);
   }
-  if (filters.position) {
-    conditions.push("j.title LIKE ?");
-    values.push(`%${filters.position}%`);
-  }
+ if (filters.position) {
+    conditions.push("j.title = ?"); // Remove LIKE, use exact match
+    values.push(filters.position);
+}
   if (filters.status) {
     const statusArray = Array.isArray(filters.status)
       ? filters.status
