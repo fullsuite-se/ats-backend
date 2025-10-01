@@ -1,7 +1,10 @@
 const pool = require("../../config/db");
 
 exports.getApplicantCount = async (req, res) => {
-    const positionFilter = req.query.position || "";
+    let positionFilter = req.query.position || "";
+    positionFilter = positionFilter.trim(); // Trim the input
+    
+    console.log('Counter endpoint called with position:', JSON.stringify(positionFilter));
 
     // Combined mapping for statuses and stages
     const statusConfig = {
@@ -29,38 +32,90 @@ exports.getApplicantCount = async (req, res) => {
 
     // Initialize the counter object
     const counter = Object.keys(statusConfig).reduce((acc, key) => {
-        acc[statusConfig[key].display] = 0; // Initialize display name counts
-        acc[statusConfig[key].stage] = 0;   // Initialize stage counts
+        acc[statusConfig[key].display] = 0;
+        acc[statusConfig[key].stage] = 0;
         return acc;
     }, {});
 
-    const sql = `
-        SELECT ats_applicant_trackings.tracking_id, ats_applicant_progress.stage, 
-                ats_applicant_progress.status, sl_company_jobs.title
-        FROM ats_applicant_trackings
-        INNER JOIN ats_applicant_progress ON ats_applicant_trackings.progress_id = ats_applicant_progress.progress_id
-        INNER JOIN sl_company_jobs ON ats_applicant_trackings.position_id = sl_company_jobs.job_id
-    `;
+    try {
+        // Build SQL query with proper filtering
+        let sql = `
+            SELECT ats_applicant_trackings.tracking_id, ats_applicant_progress.stage, 
+                    ats_applicant_progress.status, sl_company_jobs.title
+            FROM ats_applicant_trackings
+            INNER JOIN ats_applicant_progress ON ats_applicant_trackings.progress_id = ats_applicant_progress.progress_id
+            INNER JOIN sl_company_jobs ON ats_applicant_trackings.position_id = sl_company_jobs.job_id
+        `;
+        
+        const conditions = [];
+        const values = [];
 
-    const [results] = await pool.execute(sql);
+        if (positionFilter && positionFilter !== "All") {
+            conditions.push("sl_company_jobs.title = ?");
+            values.push(positionFilter);
+        }
 
-    results.forEach(data => {
-        if (!positionFilter || positionFilter === "All" || data.title === positionFilter) {
+        if (conditions.length > 0) {
+            sql += ` WHERE ${conditions.join(" AND ")}`;
+        }
+
+        console.log('Executing SQL:', sql);
+        console.log('With values:', values);
+
+        const [results] = await pool.execute(sql, values);
+        
+        console.log(`Found ${results.length} applicants for counter`);
+
+        results.forEach(data => {
             const status = data.status;
             if (statusConfig[status]) {
                 const { display, stage } = statusConfig[status];
                 counter[display] += 1;
                 counter[stage] += 1;
             }
-        }
-    });
+        });
 
-    res.json(counter);
+        console.log('Final counter result:', counter);
+        res.json(counter);
+        
+    } catch (error) {
+        console.error('Error in getApplicantCount:', error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 };
 
-
 exports.tryAPI = (req, res) => {
-    const subject  = req.body
-    console.log(subject)
-    res.json({"message": "try"})
-}
+    const subject = req.body;
+    console.log(subject);
+    res.json({"message": "try"});
+};
+
+// Add this debug endpoint
+exports.debugPositions = async (req, res) => {
+    try {
+        const sql = `
+            SELECT DISTINCT title, LENGTH(title) as length, job_id
+            FROM sl_company_jobs 
+            WHERE is_shown = 1
+            ORDER BY title
+        `;
+        const [results] = await pool.execute(sql);
+        
+        // Check for positions with spaces
+        const positionsWithSpaces = results.filter(pos => 
+            pos.title !== pos.title.trim() || 
+            pos.title.includes('  ')
+        );
+        
+        res.json({
+            allPositions: results,
+            positionsWithSpaces: positionsWithSpaces,
+            message: positionsWithSpaces.length > 0 ? 
+                'Found positions with extra spaces' : 
+                'All positions are clean'
+        });
+    } catch (error) {
+        console.error('Error in debugPositions:', error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
