@@ -1,7 +1,7 @@
 {
   "name": "ats-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "This document provides a comprehensive plan for the development and deployment of FullSuite's Application Tracking System (ATS). It outlines the structured approach to designing, building, and implementing the ATS to meet the company’s talent acquisition needs.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -22,7 +22,9 @@
   "dependencies": {
     "@slack/bolt": "^4.2.1",
     "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
     "cloudinary": "^2.6.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",

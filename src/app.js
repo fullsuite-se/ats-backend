@@ -3,6 +3,9 @@ const fs = require("fs");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+const { google } = require("googleapis");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const pool = require("./config/db");
@@ -13,6 +16,8 @@ const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
+app.use(bodyParser.json());
 
 // Disable CORS protection from this react project origin
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
@@ -97,6 +102,10 @@ const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
 //password - for password reset
 const passwordRoutes = require("./routes/password/passwordRoutes");
 
+//calendar
+const calendarAuthRoutes = require("./routes/calendar/calendarAuthRoutes");
+const calendarRoutes = require("./routes/calendar/calendarRoutes");
+
 // Routes
 app.use("/applicants/pending", pendingApplicantRoutes);
 app.use("/analytics/dashboard", dashboardRoutes);
@@ -125,6 +134,8 @@ app.use("/jobs", jobRoutes);
 app.use("/setups", setupRoutes);
 app.use("/user-configuration", userConfigurationRoutes);
 app.use("/password", passwordRoutes);
+app.use("/auth", calendarAuthRoutes); //calendar auth
+app.use("/api/calendar", calendarRoutes); //calendar
 
 app.use("/applicants/delete", deleteApplicantRoutes);
 
