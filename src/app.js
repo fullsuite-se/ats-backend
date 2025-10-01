@@ -30,10 +30,15 @@ app.use(
       CLIENT_ORIGIN_FS,
       "http://localhost:5173",
       "http://192.168.88.244",
+      "https://ats-interns.vercel.app",
     ],
     credentials: true,
+
+  
   })
 );
+
+console.log("Client Origin: " + CLIENT_ORIGIN);
 
 // Cron Jobs
 const updateStatusCronJob = require("./controllers/cronjob/updateStatus");
