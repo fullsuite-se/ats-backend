@@ -1,16 +1,11 @@
 // server.js
 const path = require("path");
-const fs = require("fs");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
-require("dotenv").config();
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
-const { google } = require("googleapis");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const pool = require("./config/db");
+require("dotenv").config();
 
+const pool = require("./config/db");
 const express = require("express");
 const app = express();
 
@@ -19,21 +14,17 @@ const app = express();
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
-// Parse requests
+// Parse incoming requests
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json());
 
 // --------------------- CORS Setup --------------------- //
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
-const CLIENT_ORIGIN_FS = process.env.CLIENT_ORIGIN_FS; 
-const CLIENT_ORIGIN_PREVIEW = process.env.CLIENT_ORIGIN_PREVIEW; 
-
 const allowedOrigins = [
-  CLIENT_ORIGIN,
-  CLIENT_ORIGIN_FS,
-  CLIENT_ORIGIN_PREVIEW,
+  process.env.CLIENT_ORIGIN,
+  process.env.CLIENT_ORIGIN_FS,
+  process.env.CLIENT_ORIGIN_PREVIEW,
   "http://localhost:5173",
   "http://192.168.88.244",
 ];
@@ -49,135 +40,70 @@ app.options("*", cors({
   credentials: true,
 }));
 
-console.log("Client Origin: ", CLIENT_ORIGIN);
+console.log("Allowed origins:", allowedOrigins);
 
 // --------------------- Cron Jobs --------------------- //
-const updateStatusCronJob = require("./controllers/cronjob/updateStatus");
-updateStatusCronJob();
+require("./controllers/cronjob/updateStatus")();
 
 // --------------------- Routes --------------------- //
 
 // Auth
-const loginRoutes = require("./routes/auth/loginRoutes");
-const registerRoutes = require("./routes/auth/registerRoutes");
+app.use("/auth", require("./routes/auth/loginRoutes"));
+app.use("/auth", require("./routes/auth/registerRoutes"));
+app.use("/auth", require("./routes/calendar/calendarAuthRoutes"));
 
 // Applicants
-const applicantRoutes = require("./routes/applicant/applicantRoutes");
-const addApplicantRoutes = require("./routes/applicant/addApplicantRoutes");
-const editApplicantRoutes = require("./routes/applicant/editApplicantRoutes");
-const updateStatusRoutes = require("./routes/applicant/updateStatusRoutes");
-const checkApplicantRoutes = require("./routes/applicant/checkApplicantRoutes");
-const pendingApplicantRoutes = require("./routes/applicant/pendingApplicantRoutes");
-const deleteApplicantRoutes = require("./routes/applicant/deleteApplicantRoutes");
+app.use("/applicants/pending", require("./routes/applicant/pendingApplicantRoutes"));
+app.use("/applicants", require("./routes/applicant/applicantRoutes"));
+app.use("/applicants/add", require("./routes/applicant/addApplicantRoutes"));
+app.use("/applicants/check", require("./routes/applicant/checkApplicantRoutes"));
+app.use("/applicant/edit", require("./routes/applicant/editApplicantRoutes"));
+app.use("/applicant/update/status", require("./routes/applicant/updateStatusRoutes"));
+app.use("/applicants/delete", require("./routes/applicant/deleteApplicantRoutes"));
 
 // Interview
-const interviewRoutes = require("./routes/interview/interviewRoutes");
+app.use("/interview", require("./routes/interview/interviewRoutes"));
 
 // Company
-const positionRoutes = require("./routes/company/positionRoutes");
-const appliedSourceRoutes = require("./routes/company/appliedSourceRoutes");
-const discoveredSourceRoutes = require("./routes/company/discoveredSourceRoutes");
+app.use("/company", require("./routes/company/positionRoutes"));
+app.use("/company/sources", require("./routes/company/appliedSourceRoutes"));
+app.use("/company/discovered", require("./routes/company/discoveredSourceRoutes"));
 
 // Analytics
-const metricRoutes = require("./routes/analytic/metricsRoutes");
-const graphsRoutes = require("./routes/analytic/graphsRoutes");
-const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
+app.use("/analytics/dashboard", require("./routes/analytic/dashboardRoutes"));
+app.use("/analytic/metrics", require("./routes/analytic/metricsRoutes"));
+app.use("/analytic/graphs", require("./routes/analytic/graphsRoutes"));
 
 // Counter
-const applicantCounterRoutes = require("./routes/counter/applicantCounterRoute");
+app.use("/counter", require("./routes/counter/applicantCounterRoute"));
 
 // Notification
-const notificationRoutes = require("./routes/notification/notificationRoutes");
+app.use("/notification", require("./routes/notification/notificationRoutes"));
 
 // Email
-const emailRoutes = require("./routes/email/emailRoutes");
+app.use("/email", require("./routes/email/emailRoutes"));
 
 // User
-const userRoutes = require("./routes/user/userRoutes");
-const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
+app.use("/user", require("./routes/user/userRoutes"));
+app.use("/user-configuration", require("./routes/userConfiguration/userConfigurationRoutes"));
 
 // Misc
-const statusRoutes = require("./routes/status/statusRoutes");
+app.use("/status", require("./routes/status/statusRoutes"));
+app.use("/upload", require("./routes/upload/uploadRoutes"));
 
-// Upload
-const uploadRoutes = require("./routes/upload/uploadRoutes");
-
-// Industries & Jobs
-const industryRoutes = require("./routes/jobs/industryRoutes");
-const jobRoutes = require("./routes/jobs/jobRoutes");
-const setupRoutes = require("./routes/jobs/setupRoutes");
+// Jobs & Industries
+app.use("/industries", require("./routes/jobs/industryRoutes"));
+app.use("/jobs", require("./routes/jobs/jobRoutes"));
+app.use("/setups", require("./routes/jobs/setupRoutes"));
 
 // Status History
-const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
+app.use("/applicant/status-history", require("./routes/applicant/statHistoryRoutes"));
 
 // Password
-const passwordRoutes = require("./routes/password/passwordRoutes");
+app.use("/password", require("./routes/password/passwordRoutes"));
 
 // Calendar
-const calendarAuthRoutes = require("./routes/calendar/calendarAuthRoutes");
-const calendarRoutes = require("./routes/calendar/calendarRoutes");
-
-// --------------------- Apply Routes --------------------- //
-
-// Applicants
-app.use("/applicants/pending", pendingApplicantRoutes);
-app.use("/applicants", applicantRoutes);
-app.use("/applicants/add", addApplicantRoutes);
-app.use("/applicants/check", checkApplicantRoutes);
-app.use("/applicant/edit", editApplicantRoutes);
-app.use("/applicant/update/status", updateStatusRoutes);
-app.use("/applicants/delete", deleteApplicantRoutes);
-
-// Auth
-app.use("/auth", loginRoutes);
-app.use("/auth", registerRoutes);
-app.use("/auth", calendarAuthRoutes); // calendar auth
-
-// Analytics
-app.use("/analytics/dashboard", dashboardRoutes);
-app.use("/analytic/metrics", metricRoutes);
-app.use("/analytic/graphs", graphsRoutes);
-
-// Counter
-app.use("/counter", applicantCounterRoutes);
-
-// Interview
-app.use("/interview", interviewRoutes);
-
-// Notification
-app.use("/notification", notificationRoutes);
-
-// Email
-app.use("/email", emailRoutes);
-
-// Company
-app.use("/company", positionRoutes);
-app.use("/company/sources", appliedSourceRoutes);
-app.use("/company/discovered", discoveredSourceRoutes);
-
-// User
-app.use("/user", userRoutes);
-app.use("/user-configuration", userConfigurationRoutes);
-
-// Misc
-app.use("/status", statusRoutes);
-
-// Upload
-app.use("/upload", uploadRoutes);
-
-// Industries & Jobs
-app.use("/industries", industryRoutes);
-app.use("/jobs", jobRoutes);
-app.use("/setups", setupRoutes);
-
-// Status History
-app.use("/applicant/status-history", statusHistoryRoutes);
-
-// Password
-app.use("/password", passwordRoutes);
-
-// Calendar
-app.use("/api/calendar", calendarRoutes);
+app.use("/api/calendar", require("./routes/calendar/calendarRoutes"));
 
 // --------------------- Protected Route --------------------- //
 const verifyToken = require("./middlewares/verifyToken");
@@ -187,15 +113,13 @@ app.get("/protected", verifyToken, (req, res) => {
 });
 
 // --------------------- Database Test --------------------- //
-const testConnection = async () => {
+(async () => {
   try {
-    const results = await pool.query("SELECT * FROM ats_applicants LIMIT 1");
+    await pool.query("SELECT 1");
     console.log("✅ Connected to database");
   } catch (error) {
     console.error("❌ DB Connection Error:", error.message);
   }
-};
-
-testConnection();
+})();
 
 module.exports = app;
