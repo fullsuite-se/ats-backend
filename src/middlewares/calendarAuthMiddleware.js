@@ -4,6 +4,12 @@ const { oauth2Client } = require("../config/googleCalendarConfig");
 
 function setCredentialsFromCookies(req, res, next) {
   const cookie = req.cookies.tokens;
+
+  console.log("Cookie:", req.cookies);
+
+  console.log("Cookie:", JSON.stringify(req.cookies));
+
+
   if (!cookie) {
     return res.status(401).json({ error: "Not authenticated" });
   }
