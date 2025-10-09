@@ -63,10 +63,10 @@ const insertApplicant = async (applicant, user_id = null) => {
     }
 
     try {
-      // Insert applicant
+      // Insert applicant - ADD THE NEW FIELDS HERE
       await connection.execute(
-        `INSERT INTO ats_applicants (applicant_id, first_name, middle_name, last_name, contact_id, gender, birth_date, discovered_at, cv_link) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO ats_applicants (applicant_id, first_name, middle_name, last_name, contact_id, gender, birth_date, discovered_at, cv_link, is_first_job, reason_for_leaving) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           ids.applicant_id,
           applicant.first_name,
@@ -77,6 +77,8 @@ const insertApplicant = async (applicant, user_id = null) => {
           applicant.birth_date || null,
           applicant.discovered_at.toUpperCase().replace(/ /g, "_") || null,
           applicant.cv_link || null,
+          applicant.is_first_job, // NEW FIELD
+          applicant.reason_for_leaving || null, // NEW FIELD
         ]
       );
     } catch (error) {
@@ -167,7 +169,8 @@ const getApplicant = async (applicant_id) => {
                     a.birth_date,
                     a.discovered_at,
                     a.cv_link,
-    
+                    a.is_first_job,        -- NEW FIELD
+                    a.reason_for_leaving,  -- NEW FIELD
                     
                     c.mobile_number_1,
                     c.mobile_number_2,
