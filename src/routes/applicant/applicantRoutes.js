@@ -9,6 +9,15 @@ router.get("/search", applicantController.searchApplicant);
 //gets all applicants but limit to x. 
 //eg., http://localhost:3000/applicants/pagination?page=1&limit=10
 //Though this will work with http://localhost:3000/applicants/pagination
+
+
+// Get first-time job seekers
+router.get('/first-time-job-seekers', applicantController.getFirstTimeJobSeekers);
+
+// Get first-time job seekers with pagination
+router.get('/first-time-job-seekers/paginated', applicantController.getFirstTimeJobSeekersPagination);
+
+
 router.get("/pagination", applicantController.getAllApplicantsPagination);
 
 //gets all applicants
@@ -22,6 +31,8 @@ router.get("/filter/for-excel-export", applicantController.getApplicantsFilterFo
 //gets a specific applicant
 router.get("/:applicant_id", applicantController.getApplicant);
 
+// In applicantRoutes.js
+router.get("/filter/first-time-job-seekers", applicantController.getApplicantsFirstTimeJobSeekersFilter);
 
 
 module.exports = router;
