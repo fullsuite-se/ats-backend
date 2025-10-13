@@ -351,11 +351,206 @@ const deleteApplicant = async (applicant_id) => {
   }
 };
 
+
+
+const getFirstTimeJobSeekers = async (filters = {}) => {
+  const conditions = ["a.is_first_job = TRUE"];
+  const values = [];
+
+  // Add optional filters
+  if (filters.month) {
+    conditions.push("MONTHNAME(t.created_at) = ?");
+    values.push(filters.month);
+  }
+  if (filters.year) {
+    conditions.push("YEAR(t.created_at) = ?");
+    values.push(filters.year);
+  }
+  if (filters.position) {
+    conditions.push("j.title LIKE ?");
+    values.push(`%${filters.position}%`);
+  }
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : [filters.status];
+    const placeholders = statusArray.map(() => "?").join(", ");
+    conditions.push(`p.status IN (${placeholders})`);
+    values.push(...statusArray);
+  }
+  if (filters.searchQuery) {
+    conditions.push(`(
+      a.first_name LIKE ?
+      OR a.middle_name LIKE ? 
+      OR a.last_name LIKE ?
+      OR CONCAT(a.first_name, ' ', a.last_name) LIKE ?
+      OR c.email_1 LIKE ?
+      OR c.mobile_number_1 LIKE ?
+    )`);
+    values.push(
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`
+    );
+  }
+
+  const sql = `
+    SELECT
+      a.applicant_id,
+      a.first_name,
+      a.middle_name,
+      a.last_name,
+      a.is_first_job,
+      a.reason_for_leaving,
+      a.date_created,
+      t.created_at as application_date,
+      p.status,
+      p.stage,
+      j.title as position_applied,
+      c.email_1,
+      c.mobile_number_1,
+      a.cv_link,
+      a.discovered_at,
+      t.applied_source,
+      t.referrer_name,
+      p.progress_id
+    FROM ats_applicants a
+    LEFT JOIN ats_contact_infos c
+      ON a.applicant_id = c.applicant_id
+    LEFT JOIN ats_applicant_trackings t
+      ON a.applicant_id = t.applicant_id
+    LEFT JOIN ats_applicant_progress p
+      ON t.progress_id = p.progress_id
+    LEFT JOIN sl_company_jobs j
+      ON t.position_id = j.job_id
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY t.created_at DESC
+  `;
+
+  try {
+    const [results] = await pool.execute(sql, values);
+    return results;
+  } catch (error) {
+    console.error("Error fetching first-time job seekers:", error);
+    return [];
+  }
+};
+
+const getFirstTimeJobSeekersPaginated = async (filters = {}, page = 1, limit = 10) => {
+  const conditions = ["a.is_first_job = TRUE"];
+  const values = [];
+
+  const offset = (page - 1) * limit;
+
+  // Add optional filters
+  if (filters.month) {
+    conditions.push("MONTHNAME(t.created_at) = ?");
+    values.push(filters.month);
+  }
+  if (filters.year) {
+    conditions.push("YEAR(t.created_at) = ?");
+    values.push(filters.year);
+  }
+  if (filters.position) {
+    conditions.push("j.title LIKE ?");
+    values.push(`%${filters.position}%`);
+  }
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : [filters.status];
+    const placeholders = statusArray.map(() => "?").join(", ");
+    conditions.push(`p.status IN (${placeholders})`);
+    values.push(...statusArray);
+  }
+
+  // Main query with pagination
+  const sql = `
+    SELECT
+      a.applicant_id,
+      a.first_name,
+      a.middle_name,
+      a.last_name,
+      a.is_first_job,
+      a.date_created,
+      t.created_at as application_date,
+      p.status,
+      j.title as position_applied,
+      c.email_1,
+      c.mobile_number_1,
+      p.progress_id
+    FROM ats_applicants a
+    LEFT JOIN ats_contact_infos c
+      ON a.applicant_id = c.applicant_id
+    LEFT JOIN ats_applicant_trackings t
+      ON a.applicant_id = t.applicant_id
+    LEFT JOIN ats_applicant_progress p
+      ON t.progress_id = p.progress_id
+    LEFT JOIN sl_company_jobs j
+      ON t.position_id = j.job_id
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY t.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  // Count query
+  const countSql = `
+    SELECT COUNT(*) as total
+    FROM ats_applicants a
+    LEFT JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
+    LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+    LEFT JOIN sl_company_jobs j ON t.position_id = j.job_id
+    WHERE ${conditions.join(" AND ")}
+  `;
+
+  try {
+    const [results] = await pool.execute(sql, [...values, limit, offset]);
+    const [[{ total }]] = await pool.execute(countSql, values);
+    
+    return {
+      applicants: results,
+      totalApplicants: total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    };
+  } catch (error) {
+    console.error("Error fetching first-time job seekers with pagination:", error);
+    return {
+      applicants: [],
+      totalApplicants: 0,
+      totalPages: 0,
+      currentPage: page,
+    };
+  }
+};
+
+const getFirstTimeJobSeekersCount = async () => {
+  const sql = `
+    SELECT COUNT(*) as count 
+    FROM ats_applicants 
+    WHERE is_first_job = TRUE
+  `;
+
+  try {
+    const [[result]] = await pool.execute(sql);
+    return result.count;
+  } catch (error) {
+    console.error("Error counting first-time job seekers:", error);
+    return 0;
+  }
+};
+
 module.exports = { 
   insertApplicant, 
   getAllApplicants, 
   getApplicant, 
   getBlackListedApplicants, 
   existingApplication, 
-  deleteApplicant 
+  deleteApplicant,
+  getFirstTimeJobSeekers,           
+  getFirstTimeJobSeekersPaginated, 
+  getFirstTimeJobSeekersCount      
 };
