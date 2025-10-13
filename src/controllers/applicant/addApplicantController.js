@@ -2,6 +2,7 @@ const multer = require("multer");
 const upload = multer();
 require("dotenv").config();
 
+
 const { v4: uuidv4 } = require("uuid");
 const pool = require("../../config/db");
 const app = require("../../app");
@@ -11,7 +12,7 @@ const applicantModel = require("../../models/applicant/applicantModel");
 const stageMapping = require("../../utils/statusMapping");
 const notificationController = require("../../controllers/notification/notificationController");
 const statusHistoryController = require("../../controllers/applicant/statusHistoryController");
-
+const slack = require("../../services/slack");
 //DEFAULT
 const USER_ID = process.env.USER_ID;
 
@@ -207,7 +208,7 @@ exports.addApplicant = async (req, res) => {
     // Send Slack notification for new applicant (only for external applications)
     if (!isFromATS) {
       try {
-        await notificationController.newApplicant(applicant_id);
+        await slack.newApplicant(applicant_id);
         console.log("Slack notification sent for new applicant:", applicant_id);
       } catch (slackError) {
         console.error("Failed to send Slack notification:", slackError);
