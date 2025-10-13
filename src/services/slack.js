@@ -99,6 +99,31 @@ module.exports.messageBotInterview = async (interviewer_id, applicant_id) => {
 // };
 
 
+module.exports.newApplicant = async (applicant_id) => {
+    let applicant = await applicantModel.getApplicant(applicant_id);
+    applicant = applicant[0];
+
+    const subject = `A new applicant has been added: *${applicant.first_name} ${applicant.last_name}*`;
+    const text = subject.replace(/\*/g, '');
+
+    await app.client.chat.postMessage({
+        token: process.env.SLACK_BOT_TOKEN,
+        channel: process.env.SLACK_CHANNEL_APPLICANT || "kriya-ats-applicants",
+        text: text,
+        blocks: [
+            {
+                type: "section",
+                text: {
+                    type: "mrkdwn",
+                    text: subject
+                }
+            }
+        ],
+        unfurl_links: false,
+        unfurl_media: false
+    });
+}
+
 module.exports.messageBotNote = async (note, interviewer_id, applicant_id) => {
     const user = await userModel.getUserInfo(interviewer_id);
     let applicant = await applicantModel.getApplicant(applicant_id);
