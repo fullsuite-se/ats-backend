@@ -93,6 +93,8 @@ exports.addNote = async (req, res) => {
     }
 }
 
+
+
 exports.exportDiscussionInterview = async (req, res) => {
     try {
         const applicant_id = req.params.applicant_id
@@ -126,6 +128,7 @@ exports.exportDiscussionInterview = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
 
 
 
