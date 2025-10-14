@@ -2,6 +2,7 @@ const pool = require("../../config/db");
 const { v4: uuidv4 } = require("uuid");
 const emailController = require("../../controllers/email/emailController");
 const statusMapping = require("../../utils/statusMapping");
+const slack = require("../../services/slack");
 
 // Helper to convert ISO date string to MySQL DATETIME format
 function toMySQLDateTime(dateString) {
@@ -25,14 +26,19 @@ const updateStatus = async (
   let stage = statusMapping.mapStatusToStage(converted_status);
 
   try {
-    // Get the current status before updating
-    let getPreviousStatusSQL =
-      "SELECT status FROM ats_applicant_progress WHERE progress_id = ?";
+    // Get the current status before updating - FIXED QUERY
+    let getPreviousStatusSQL = `
+      SELECT p.status, t.applicant_id 
+      FROM ats_applicant_progress p
+      LEFT JOIN ats_applicant_trackings t ON p.progress_id = t.progress_id
+      WHERE p.progress_id = ?
+    `;
     const [previousStatusResult] = await pool.execute(getPreviousStatusSQL, [
       progress_id,
     ]);
     const previousStatus =
       previousStatusResult.length > 0 ? previousStatusResult[0].status : null;
+    const applicant_id = previousStatusResult.length > 0 ? previousStatusResult[0].applicant_id : null;
 
     // Update status of applicant
     let sql;
@@ -90,6 +96,21 @@ const updateStatus = async (
       }
 
       await pool.execute(insertHistorySQL, historyValues);
+
+      // Send Slack notification for status change
+      if (applicant_id && previousStatus) {
+        try {
+          await slack.applicantStatusUpdate(
+            applicant_id,
+            previousStatus,
+            converted_status,
+            user_id
+          );
+        } catch (slackError) {
+          console.error("Failed to send Slack notification:", slackError.message);
+          // Don't fail the whole request if Slack notification fails
+        }
+      }
     }
 
     return true;
