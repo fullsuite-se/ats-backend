@@ -60,7 +60,7 @@ const formatEmploymentHistory = (isFirstJob, reasonForLeaving) => {
         return "*First-time job seeker*";
     } else if (hasWorkExperience) {
         return reasonForLeaving 
-            ? `*Experienced* | Reason for leaving: ${reasonForLeaving}`
+            ? `*Previously employed* — Reason for leaving: ${reasonForLeaving}`
             : "*Experienced*";
     }
     return "*Employment history not specified*";
