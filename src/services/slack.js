@@ -41,10 +41,24 @@ const formatSource = (source) => {
 };
 
 // Format employment history
+// Format employment history - FIXED VERSION
 const formatEmploymentHistory = (isFirstJob, reasonForLeaving) => {
-    if (isFirstJob === true) {
+    // Handle different possible representations of boolean
+    const isFirstTimeJobSeeker = 
+        isFirstJob === true || 
+        isFirstJob === 1 || 
+        isFirstJob === '1' || 
+        isFirstJob === 'true';
+    
+    const hasWorkExperience = 
+        isFirstJob === false || 
+        isFirstJob === 0 || 
+        isFirstJob === '0' || 
+        isFirstJob === 'false';
+
+    if (isFirstTimeJobSeeker) {
         return "*First-time job seeker*";
-    } else if (isFirstJob === false) {
+    } else if (hasWorkExperience) {
         return reasonForLeaving 
             ? `*Experienced* | Reason for leaving: ${reasonForLeaving}`
             : "*Experienced*";
@@ -120,7 +134,7 @@ module.exports.newApplicant = async (applicant_id) => {
                 type: "header",
                 text: {
                     type: "plain_text",
-                    text: "New Applicant Submitted"
+                    text: "New Applicant"
                 }
             },
             {
@@ -186,25 +200,6 @@ module.exports.newApplicant = async (applicant_id) => {
             });
         }
 
-        // Add status and action section
-        blocks.push(
-            {
-                type: "divider"
-            },
-            {
-                type: "section",
-                fields: [
-                    {
-                        type: "mrkdwn",
-                        text: `*Status:*\n${applicant.status || 'PRE_SCREENING'}`
-                    },
-                    {
-                        type: "mrkdwn",
-                        text: `*Stage:*\n${applicant.stage || 'NEW_APPLICATION'}`
-                    }
-                ]
-            }
-        );
 
         // Add action buttons if FRONTEND_URL is available
         if (process.env.FRONTEND_URL) {
