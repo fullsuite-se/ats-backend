@@ -270,7 +270,7 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
                 but our advice is that you answer each question as honestly as you can.</p>
 
                 <p>For more information about our company and what we do, kindly visit our website here: 
-                <a href="https://fullsuite.ph/" style="color: #008080;">https://fullsuite.ph/</a></p>
+                <a href="https://www.suitelifer.com/" style="color: #008080;">https://www.suitelifer.com/</a></p>
 
                 <p>We look forward to reviewing your completed tests and getting to know you better.</p>
             </div>
