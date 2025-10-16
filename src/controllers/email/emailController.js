@@ -145,6 +145,18 @@ function createEmailTemplate(content, signature) {
 </html>`;
 }
 
+// Helper function to get SMTP credentials with fallback
+const getSmtpCredentials = (userData) => {
+    const email = userData?.user_email || process.env.SMTP_EMAIL_DEFAULT;
+    const password = userData?.app_password || process.env.SMTP_PASSWORD_DEFAULT;
+    
+    if (!email || !password) {
+        throw new Error('SMTP credentials not found. Please check environment variables or user data.');
+    }
+    
+    return { email_user: email, email_pass: password };
+};
+
 exports.addEmailTemplates = async (req, res) => {
     try {
         const data = req.body;
@@ -209,9 +221,12 @@ exports.emailApplicant = async (req, res) => {
         }))
       : [];
 
+    // Get SMTP credentials with fallback
+    const smtpCredentials = getSmtpCredentials(userData);
+
     // Create mail options with proper encoding
     const mailOptions = {
-      from: `"${userData.company_name}" <${userData.user_email}>`,
+      from: `"${userData.company_name}" <${smtpCredentials.email_user}>`,
       to: recipientEmails,
       cc: "hireme@getfullsuite.com",
       bcc: userData.user_email,
@@ -225,10 +240,7 @@ exports.emailApplicant = async (req, res) => {
     };
 
     // create transporter
-    const transporter = createTransporter({
-      email_user: userData.user_email,
-      email_pass: userData.app_password,
-    });
+    const transporter = createTransporter(smtpCredentials);
 
     const info = await transporter.sendMail(mailOptions);
 
@@ -287,9 +299,12 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
         
         const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
 
+        // Get SMTP credentials with fallback
+        const smtpCredentials = getSmtpCredentials(userData);
+
         // Create mail options
         const mailOptions = {
-            from: `"${userData.company_name}" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${smtpCredentials.email_user}>`,
             to: recipientEmails,
             cc: "hireme@getfullsuite.com",
             bcc: userData.user_email, // ensures sender also gets inbox copy
@@ -303,10 +318,7 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
         };
 
         // Create transporter
-        const transporter = createTransporter({ 
-            email_user: userData.user_email, 
-            email_pass: userData.app_password 
-        });
+        const transporter = createTransporter(smtpCredentials);
         const info = await transporter.sendMail(mailOptions);
 
         console.log(`✅ Email sent successfully to: ${recipientEmails.join(", ")}, CC: hireme@getfullsuite.com, BCC: ${userData.user_email}`);
@@ -356,11 +368,11 @@ exports.notifyUsersNewApplicant = async (applicant_id) => {
         ]);
 
         const applicantData = applicantArray[0];
-        const emailSubject = `📩 New Applicant for <strong>${applicantData.job_title}</strong> Position`;
+        const emailSubject = `New Applicant for <strong>${applicantData.job_title}</strong> Position`;
 
         const emailBody = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                <h2 style="color: #2c3e50;">🚀 New Application Received</h2>
+                <h2 style="color: #2c3e50;">New Application Received</h2>
                 <p>
                     A new applicant has applied for the position of 
                     <strong style="color: #2980b9;">${applicantData.job_title}</strong>.
@@ -383,8 +395,11 @@ exports.notifyUsersNewApplicant = async (applicant_id) => {
         
         const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
 
+        // Get SMTP credentials with fallback
+        const smtpCredentials = getSmtpCredentials(userData);
+
         const mailOptions = {
-            from: `"${userData.company_name}" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${smtpCredentials.email_user}>`,
             to: recipientEmails,
             subject: emailSubject.replace(/<[^>]+>/g, ""), // remove HTML for plain subject
             html: finalEmailBody,
@@ -395,10 +410,7 @@ exports.notifyUsersNewApplicant = async (applicant_id) => {
             }
         };
 
-        const transporter = createTransporter({
-            email_user: userData.user_email,
-            email_pass: userData.app_password
-        });
+        const transporter = createTransporter(smtpCredentials);
 
         await transporter.sendMail(mailOptions);
         return true;
@@ -424,9 +436,12 @@ exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
         
         const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
 
+        // Get SMTP credentials with fallback
+        const smtpCredentials = getSmtpCredentials(userData);
+
         // Create mail options
         const mailOptions = {
-            from: `"${userData.company_name}" <${userData.user_email}>`,
+            from: `"${userData.company_name}" <${smtpCredentials.email_user}>`,
             to: recipientEmails,
             subject: email_subject,
             html: finalEmailBody,
@@ -438,7 +453,7 @@ exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
         };
 
         //create transporter
-        const transporter = createTransporter({ email_user: userData.user_email, email_pass: userData.app_password })
+        const transporter = createTransporter(smtpCredentials);
         const info = await transporter.sendMail(mailOptions);
         return true
     } catch (error) {

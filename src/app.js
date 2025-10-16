@@ -81,6 +81,7 @@ const industryRoutes = require("./routes/jobs/industryRoutes");
 
 // jobs
 const jobRoutes = require("./routes/jobs/jobRoutes");
+const officeRoutes = require("./routes/jobs/officeRoutes");
 
 // setups
 const setupRoutes = require("./routes/jobs/setupRoutes");
@@ -121,6 +122,7 @@ app.use("/user", userRoutes);
 app.use("/status", statusRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/industries", industryRoutes);
+app.use("/offices", officeRoutes);
 app.use("/jobs", jobRoutes);
 app.use("/setups", setupRoutes);
 app.use("/user-configuration", userConfigurationRoutes);
