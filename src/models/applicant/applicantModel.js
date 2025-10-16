@@ -38,6 +38,11 @@ const insertApplicant = async (applicant, user_id = null) => {
     }
 
     try {
+      // FIXED: Safely handle applied_source
+      const appliedSource = applicant.applied_source 
+        ? applicant.applied_source.toUpperCase().replace(/ /g, "_") 
+        : null;
+
       // Insert tracking
       await connection.execute(
         `INSERT INTO ats_applicant_trackings (tracking_id, applicant_id, progress_id, created_at, created_by, updated_by, test_result, applied_source, referrer_name, company_id, position_id) 
@@ -52,7 +57,7 @@ const insertApplicant = async (applicant, user_id = null) => {
           applicant.created_by || CREATED_BY,
           applicant.updated_by || UPDATED_BY,
           applicant.test_result || null,
-          applicant.applied_source.toUpperCase().replace(/ /g, "_") || null,
+          appliedSource || null, // Use the safely handled value
           applicant.referrer_name || null,
           applicant.company_id || COMPANY_ID,
           applicant.position_id,
@@ -63,7 +68,12 @@ const insertApplicant = async (applicant, user_id = null) => {
     }
 
     try {
-      // Insert applicant - ADD THE NEW FIELDS HERE
+      // FIXED: Safely handle discovered_at
+      const discoveredAt = applicant.discovered_at 
+        ? applicant.discovered_at.toUpperCase().replace(/ /g, "_") 
+        : null;
+
+      // Insert applicant
       await connection.execute(
         `INSERT INTO ats_applicants (applicant_id, first_name, middle_name, last_name, contact_id, gender, birth_date, discovered_at, cv_link, is_first_job, reason_for_leaving) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -75,10 +85,10 @@ const insertApplicant = async (applicant, user_id = null) => {
           ids.contact_id,
           applicant.gender || null,
           applicant.birth_date || null,
-          applicant.discovered_at.toUpperCase().replace(/ /g, "_") || null,
+          discoveredAt || null, // Use the safely handled value
           applicant.cv_link || null,
-          applicant.is_first_job, // NEW FIELD
-          applicant.reason_for_leaving || null, // NEW FIELD
+          applicant.is_first_job || null, // Ensure this is not undefined
+          applicant.reason_for_leaving || null,
         ]
       );
     } catch (error) {
@@ -120,7 +130,7 @@ const insertApplicant = async (applicant, user_id = null) => {
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Error inserting applicant:", error.message);
-    throw error; // Re-throw to be caught by the calling function
+    throw error;
   } finally {
     if (connection) connection.release();
   }
