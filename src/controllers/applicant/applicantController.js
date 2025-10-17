@@ -1,10 +1,10 @@
 const pool = require("../../config/db");
 const applicantModel = require("../../models/applicant/applicantModel");
+
 // /applicants/search?query?
 exports.searchApplicant = async (req, res) => {
   try {
     const filters = req.query;
-
 
     const conditions = [];
     const values = [];
@@ -106,7 +106,6 @@ exports.getAllApplicants = async (req, res) => {
 exports.getAllApplicantsPagination = async (req, res) => {
   try {
 
-
     // Extract pagination parameters from the request query
     let { page, limit } = req.query;
     page = parseInt(page) || 1; // Default page = 1
@@ -157,8 +156,6 @@ exports.getApplicantsFilter = async (req, res) => {
   const conditions = [];
   const values = [];
 
-
-
   if (filters.month) {
     conditions.push("MONTHNAME(t.created_at)= ?");
     values.push(filters.month);
@@ -167,10 +164,10 @@ exports.getApplicantsFilter = async (req, res) => {
     conditions.push("YEAR(t.created_at) = ?");
     values.push(filters.year);
   }
-  if (filters.position) {
-    conditions.push("j.title LIKE ?");
-    values.push(`%${filters.position}%`);
-  }
+ if (filters.position) {
+    conditions.push("j.title = ?"); // Remove LIKE, use exact match
+    values.push(filters.position);
+}
   if (filters.status) {
     const statusArray = Array.isArray(filters.status)
       ? filters.status
@@ -216,6 +213,46 @@ exports.getApplicantsFilter = async (req, res) => {
   }
 };
 
+// NEW FUNCTION: Get first-time job seekers only
+exports.getFirstTimeJobSeekers = async (req, res) => {
+  try {
+    const filters = req.query;
+    const results = await applicantModel.getFirstTimeJobSeekers(filters);
+
+    return res.json({
+      firstTimeJobSeekers: results,
+      totalCount: results.length,
+      message: "First-time job seekers retrieved successfully"
+    });
+  } catch (error) {
+    console.error("Error fetching first-time job seekers:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+// NEW FUNCTION: Get first-time job seekers with pagination
+exports.getFirstTimeJobSeekersPagination = async (req, res) => {
+  try {
+    const filters = req.query;
+    let { page, limit } = req.query;
+    
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+
+    const result = await applicantModel.getFirstTimeJobSeekersPaginated(filters, page, limit);
+
+    return res.status(200).json({
+      firstTimeJobSeekers: result.applicants,
+      totalApplicants: result.totalApplicants,
+      totalPages: result.totalPages,
+      currentPage: result.currentPage,
+    });
+  } catch (error) {
+    console.error("Error fetching first-time job seekers with pagination:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getApplicant = async (req, res) => {
   try {
     const applicant_id = req.params.applicant_id;
@@ -233,13 +270,11 @@ exports.getApplicant = async (req, res) => {
   }
 };
 
-
 exports.getApplicantsFilterForExelExport = async (req, res) => {
 
   const filters = req.query;
   const conditions = [];
   const values = [];
-
 
   if (filters.month) {
     conditions.push("MONTHNAME(t.created_at)= ?");
@@ -334,5 +369,58 @@ exports.deleteApplicant = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error deleting applicant", error: error.message });
+  }
+};
+
+
+exports.getApplicantsFirstTimeJobSeekersFilter = async (req, res) => {
+  try {
+    const { position, status, date, dateType } = req.query;
+    
+    let sql = `
+      SELECT DISTINCT a.*, p.title, pr.status, pr.progress_id 
+      FROM applicants a
+      LEFT JOIN positions p ON a.position_id = p.position_id
+      LEFT JOIN (
+        SELECT applicant_id, status, progress_id,
+               ROW_NUMBER() OVER (PARTITION BY applicant_id ORDER BY progress_id DESC) as rn
+        FROM progress
+      ) pr ON a.applicant_id = pr.applicant_id AND pr.rn = 1
+      WHERE a.is_first_time_jobseeker = true
+    `;
+    
+    const params = [];
+    let paramCount = 0;
+
+    if (position && position !== 'All') {
+      paramCount++;
+      sql += ` AND p.title = $${paramCount}`;
+      params.push(position);
+    }
+
+    if (date && date !== 'Invalid date') {
+      paramCount++;
+      if (dateType === 'month') {
+        sql += ` AND TO_CHAR(a.created_at, 'Month') = $${paramCount}`;
+      } else if (dateType === 'year') {
+        sql += ` AND EXTRACT(YEAR FROM a.created_at) = $${paramCount}`;
+      }
+      params.push(date);
+    }
+
+    if (status && status.length > 0) {
+      const statusPlaceholders = status.map((_, index) => {
+        paramCount++;
+        return `$${paramCount}`;
+      }).join(',');
+      sql += ` AND pr.status IN (${statusPlaceholders})`;
+      params.push(...status);
+    }
+
+    const result = await db.query(sql, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error filtering first-time job seekers:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -38,6 +38,11 @@ const insertApplicant = async (applicant, user_id = null) => {
     }
 
     try {
+      // FIXED: Safely handle applied_source
+      const appliedSource = applicant.applied_source 
+        ? applicant.applied_source.toUpperCase().replace(/ /g, "_") 
+        : null;
+
       // Insert tracking
       await connection.execute(
         `INSERT INTO ats_applicant_trackings (tracking_id, applicant_id, progress_id, created_at, created_by, updated_by, test_result, applied_source, referrer_name, company_id, position_id) 
@@ -52,7 +57,7 @@ const insertApplicant = async (applicant, user_id = null) => {
           applicant.created_by || CREATED_BY,
           applicant.updated_by || UPDATED_BY,
           applicant.test_result || null,
-          applicant.applied_source.toUpperCase().replace(/ /g, "_") || null,
+          appliedSource || null, // Use the safely handled value
           applicant.referrer_name || null,
           applicant.company_id || COMPANY_ID,
           applicant.position_id,
@@ -63,10 +68,15 @@ const insertApplicant = async (applicant, user_id = null) => {
     }
 
     try {
+      // FIXED: Safely handle discovered_at
+      const discoveredAt = applicant.discovered_at 
+        ? applicant.discovered_at.toUpperCase().replace(/ /g, "_") 
+        : null;
+
       // Insert applicant
       await connection.execute(
-        `INSERT INTO ats_applicants (applicant_id, first_name, middle_name, last_name, contact_id, gender, birth_date, discovered_at, cv_link) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO ats_applicants (applicant_id, first_name, middle_name, last_name, contact_id, gender, birth_date, discovered_at, cv_link, is_first_job, reason_for_leaving) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           ids.applicant_id,
           applicant.first_name,
@@ -75,8 +85,10 @@ const insertApplicant = async (applicant, user_id = null) => {
           ids.contact_id,
           applicant.gender || null,
           applicant.birth_date || null,
-          applicant.discovered_at.toUpperCase().replace(/ /g, "_") || null,
+          discoveredAt || null, // Use the safely handled value
           applicant.cv_link || null,
+          applicant.is_first_job || null, // Ensure this is not undefined
+          applicant.reason_for_leaving || null,
         ]
       );
     } catch (error) {
@@ -118,7 +130,7 @@ const insertApplicant = async (applicant, user_id = null) => {
   } catch (error) {
     if (connection) await connection.rollback();
     console.error("Error inserting applicant:", error.message);
-    throw error; // Re-throw to be caught by the calling function
+    throw error;
   } finally {
     if (connection) connection.release();
   }
@@ -167,7 +179,8 @@ const getApplicant = async (applicant_id) => {
                     a.birth_date,
                     a.discovered_at,
                     a.cv_link,
-    
+                    a.is_first_job,        -- NEW FIELD
+                    a.reason_for_leaving,  -- NEW FIELD
                     
                     c.mobile_number_1,
                     c.mobile_number_2,
@@ -348,11 +361,206 @@ const deleteApplicant = async (applicant_id) => {
   }
 };
 
+
+
+const getFirstTimeJobSeekers = async (filters = {}) => {
+  const conditions = ["a.is_first_job = TRUE"];
+  const values = [];
+
+  // Add optional filters
+  if (filters.month) {
+    conditions.push("MONTHNAME(t.created_at) = ?");
+    values.push(filters.month);
+  }
+  if (filters.year) {
+    conditions.push("YEAR(t.created_at) = ?");
+    values.push(filters.year);
+  }
+  if (filters.position) {
+    conditions.push("j.title LIKE ?");
+    values.push(`%${filters.position}%`);
+  }
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : [filters.status];
+    const placeholders = statusArray.map(() => "?").join(", ");
+    conditions.push(`p.status IN (${placeholders})`);
+    values.push(...statusArray);
+  }
+  if (filters.searchQuery) {
+    conditions.push(`(
+      a.first_name LIKE ?
+      OR a.middle_name LIKE ? 
+      OR a.last_name LIKE ?
+      OR CONCAT(a.first_name, ' ', a.last_name) LIKE ?
+      OR c.email_1 LIKE ?
+      OR c.mobile_number_1 LIKE ?
+    )`);
+    values.push(
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`,
+      `%${filters.searchQuery}%`
+    );
+  }
+
+  const sql = `
+    SELECT
+      a.applicant_id,
+      a.first_name,
+      a.middle_name,
+      a.last_name,
+      a.is_first_job,
+      a.reason_for_leaving,
+      a.date_created,
+      t.created_at as application_date,
+      p.status,
+      p.stage,
+      j.title as position_applied,
+      c.email_1,
+      c.mobile_number_1,
+      a.cv_link,
+      a.discovered_at,
+      t.applied_source,
+      t.referrer_name,
+      p.progress_id
+    FROM ats_applicants a
+    LEFT JOIN ats_contact_infos c
+      ON a.applicant_id = c.applicant_id
+    LEFT JOIN ats_applicant_trackings t
+      ON a.applicant_id = t.applicant_id
+    LEFT JOIN ats_applicant_progress p
+      ON t.progress_id = p.progress_id
+    LEFT JOIN sl_company_jobs j
+      ON t.position_id = j.job_id
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY t.created_at DESC
+  `;
+
+  try {
+    const [results] = await pool.execute(sql, values);
+    return results;
+  } catch (error) {
+    console.error("Error fetching first-time job seekers:", error);
+    return [];
+  }
+};
+
+const getFirstTimeJobSeekersPaginated = async (filters = {}, page = 1, limit = 10) => {
+  const conditions = ["a.is_first_job = TRUE"];
+  const values = [];
+
+  const offset = (page - 1) * limit;
+
+  // Add optional filters
+  if (filters.month) {
+    conditions.push("MONTHNAME(t.created_at) = ?");
+    values.push(filters.month);
+  }
+  if (filters.year) {
+    conditions.push("YEAR(t.created_at) = ?");
+    values.push(filters.year);
+  }
+  if (filters.position) {
+    conditions.push("j.title LIKE ?");
+    values.push(`%${filters.position}%`);
+  }
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : [filters.status];
+    const placeholders = statusArray.map(() => "?").join(", ");
+    conditions.push(`p.status IN (${placeholders})`);
+    values.push(...statusArray);
+  }
+
+  // Main query with pagination
+  const sql = `
+    SELECT
+      a.applicant_id,
+      a.first_name,
+      a.middle_name,
+      a.last_name,
+      a.is_first_job,
+      a.date_created,
+      t.created_at as application_date,
+      p.status,
+      j.title as position_applied,
+      c.email_1,
+      c.mobile_number_1,
+      p.progress_id
+    FROM ats_applicants a
+    LEFT JOIN ats_contact_infos c
+      ON a.applicant_id = c.applicant_id
+    LEFT JOIN ats_applicant_trackings t
+      ON a.applicant_id = t.applicant_id
+    LEFT JOIN ats_applicant_progress p
+      ON t.progress_id = p.progress_id
+    LEFT JOIN sl_company_jobs j
+      ON t.position_id = j.job_id
+    WHERE ${conditions.join(" AND ")}
+    ORDER BY t.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  // Count query
+  const countSql = `
+    SELECT COUNT(*) as total
+    FROM ats_applicants a
+    LEFT JOIN ats_applicant_trackings t ON a.applicant_id = t.applicant_id
+    LEFT JOIN ats_applicant_progress p ON t.progress_id = p.progress_id
+    LEFT JOIN sl_company_jobs j ON t.position_id = j.job_id
+    WHERE ${conditions.join(" AND ")}
+  `;
+
+  try {
+    const [results] = await pool.execute(sql, [...values, limit, offset]);
+    const [[{ total }]] = await pool.execute(countSql, values);
+    
+    return {
+      applicants: results,
+      totalApplicants: total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    };
+  } catch (error) {
+    console.error("Error fetching first-time job seekers with pagination:", error);
+    return {
+      applicants: [],
+      totalApplicants: 0,
+      totalPages: 0,
+      currentPage: page,
+    };
+  }
+};
+
+const getFirstTimeJobSeekersCount = async () => {
+  const sql = `
+    SELECT COUNT(*) as count 
+    FROM ats_applicants 
+    WHERE is_first_job = TRUE
+  `;
+
+  try {
+    const [[result]] = await pool.execute(sql);
+    return result.count;
+  } catch (error) {
+    console.error("Error counting first-time job seekers:", error);
+    return 0;
+  }
+};
+
 module.exports = { 
   insertApplicant, 
   getAllApplicants, 
   getApplicant, 
   getBlackListedApplicants, 
   existingApplication, 
-  deleteApplicant 
+  deleteApplicant,
+  getFirstTimeJobSeekers,           
+  getFirstTimeJobSeekersPaginated, 
+  getFirstTimeJobSeekersCount      
 };

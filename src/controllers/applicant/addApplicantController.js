@@ -2,6 +2,7 @@ const multer = require("multer");
 const upload = multer();
 require("dotenv").config();
 
+
 const { v4: uuidv4 } = require("uuid");
 const pool = require("../../config/db");
 const app = require("../../app");
@@ -11,6 +12,7 @@ const applicantModel = require("../../models/applicant/applicantModel");
 const stageMapping = require("../../utils/statusMapping");
 const notificationController = require("../../controllers/notification/notificationController");
 const statusHistoryController = require("../../controllers/applicant/statusHistoryController");
+const slack = require("../../services/slack");
 //DEFAULT
 const USER_ID = process.env.USER_ID;
 
@@ -18,12 +20,8 @@ const USER_ID = process.env.USER_ID;
 const compare = (applicant, applicantsFromDB) => {
   const possibleDuplicates = [];
 
-
-
   applicantsFromDB.forEach((applicantFromDb) => {
     const similarity = [];
-
-    
 
     const applicantFullname = `${applicant.first_name} ${
       applicant.middle_name ?? ""
@@ -182,7 +180,6 @@ exports.checkDuplicates = async (req, res) => {
 
 exports.addApplicant = async (req, res) => {
   try {
-
     if (!req.body.applicant) {
       return res.status(400).json({ message: "Applicant data is missing" });
     }
@@ -208,6 +205,17 @@ exports.addApplicant = async (req, res) => {
       }
     );
 
+    // Send Slack notification for new applicant (only for external applications)
+    if (!isFromATS) {
+      try {
+        await slack.newApplicant(applicant_id);
+        console.log("Slack notification sent for new applicant:", applicant_id);
+      } catch (slackError) {
+        console.error("Failed to send Slack notification:", slackError);
+        // Don't fail the whole request if Slack fails
+      }
+    }
+
     if (!isFromATS) {
       await emailController.emailTestAssessment(applicant_id, USER_ID);
       await notificationController.addNotification(
@@ -232,7 +240,6 @@ exports.uploadApplicants = [
   upload.none(),
   async (req, res) => {
     try {
-     
       if (!req.body.applicants) {
         return res
           .status(400)
@@ -273,18 +280,24 @@ exports.uploadApplicants = [
             const mappedStage = stageMapping.mapStatusToStage(applicant.status);
             applicant.stage = mappedStage;
 
-            const isInserted = await applicantModel.insertApplicant(applicant);
-            if (isInserted) {
+            const { applicant_id } = await applicantModel.insertApplicant(applicant);
+            if (applicant_id) {
               successfulInserts.push(applicant);
-            } else {
               
+              // Send Slack notification for each successfully inserted applicant
+              try {
+                await notificationController.newApplicant(applicant_id);
+                console.log("Slack notification sent for bulk upload applicant:", applicant_id);
+              } catch (slackError) {
+                console.error("Failed to send Slack notification for bulk upload applicant:", applicant_id, slackError);
+              }
+            } else {
               failedInserts.push({
                 applicant,
-                reason: "Database insert returned false",
+                reason: "Database insert returned no applicant_id",
               });
             }
           } catch (insertError) {
-            // Improved error logging with applicant information
             console.error(
               `Error inserting applicant: ${JSON.stringify(applicant)} ${
                 applicant.first_name
