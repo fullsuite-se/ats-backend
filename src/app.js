@@ -1,153 +1,125 @@
+// server.js
 const path = require("path");
-const fs = require("fs");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
 require("dotenv").config();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const pool = require("./config/db");
 
+const pool = require("./config/db");
 const express = require("express");
 const app = express();
 
+// --------------------- Middleware --------------------- //
+
+// Serve static files
 app.use(express.static(path.join(__dirname, "public")));
+
+// Parse incoming requests
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
+app.use(bodyParser.json());
 
-// Disable CORS protection from this react project origin
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
-// disable cors protection from FS website.
-const CLIENT_ORIGIN_FS = process.env.CLIENT_ORIGIN_FS;
-app.use(
-  cors({
-    origin: [
-      CLIENT_ORIGIN,
-      CLIENT_ORIGIN_FS,
-      "http://localhost:5173",
-      "http://192.168.88.244",
-    ],
-    credentials: true,
-  })
-);
+// --------------------- CORS Setup --------------------- //
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,
+  process.env.CLIENT_ORIGIN_FS,
+  process.env.CLIENT_ORIGIN_PREVIEW,
+  "http://localhost:5173",
+  "http://192.168.88.244",
+];
 
-// Cron Jobs
-const updateStatusCronJob = require("./controllers/cronjob/updateStatus");
-updateStatusCronJob();
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 
-// auth
-const loginRoutes = require("./routes/auth/loginRoutes");
-const registerRoutes = require("./routes/auth/registerRoutes");
-// applicant
-const applicantRoutes = require("./routes/applicant/applicantRoutes");
-const addApplicantRoutes = require("./routes/applicant/addApplicantRoutes");
-const editApplicantRoutes = require("./routes/applicant/editApplicantRoutes");
-const updateStatusRoutes = require("./routes/applicant/updateStatusRoutes");
-const checkApplicantRoutes = require("./routes/applicant/checkApplicantRoutes");
-const pendingApplicantRoutes = require("./routes/applicant/pendingApplicantRoutes");
-const deleteApplicantRoutes = require("./routes/applicant/deleteApplicantRoutes");
+// Handle preflight requests for all routes
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 
-// interview
-const interviewRoutes = require("./routes/interview/interviewRoutes");
+console.log("Allowed origins:", allowedOrigins);
 
-// company
-const positionRoutes = require("./routes/company/positionRoutes");
-const appliedSourceRoutes = require("./routes/company/appliedSourceRoutes");
-const discoveredSourceRoutes = require("./routes/company/discoveredSourceRoutes");
+// --------------------- Cron Jobs --------------------- //
+require("./controllers/cronjob/updateStatus")();
 
-// analytic
-const metricRoutes = require("./routes/analytic/metricsRoutes");
-const graphsRoutes = require("./routes/analytic/graphsRoutes");
+// --------------------- Routes --------------------- //
 
-// counter
-const applicantCounterRoutes = require("./routes/counter/applicantCounterRoute");
+// Auth
+app.use("/auth", require("./routes/auth/loginRoutes"));
+app.use("/auth", require("./routes/auth/registerRoutes"));
+app.use("/auth", require("./routes/calendar/calendarAuthRoutes"));
 
-// notification
-const notificationRoutes = require("./routes/notification/notificationRoutes");
+// Applicants
+app.use("/applicants/pending", require("./routes/applicant/pendingApplicantRoutes"));
+app.use("/applicants", require("./routes/applicant/applicantRoutes"));
+app.use("/applicants/add", require("./routes/applicant/addApplicantRoutes"));
+app.use("/applicants/check", require("./routes/applicant/checkApplicantRoutes"));
+app.use("/applicant/edit", require("./routes/applicant/editApplicantRoutes"));
+app.use("/applicant/update/status", require("./routes/applicant/updateStatusRoutes"));
+app.use("/applicants/delete", require("./routes/applicant/deleteApplicantRoutes"));
 
-// email
-const emailRoutes = require("./routes/email/emailRoutes");
+// Interview
+app.use("/interview", require("./routes/interview/interviewRoutes"));
 
-// user
-const userRoutes = require("./routes/user/userRoutes");
+// Company
+app.use("/company", require("./routes/company/positionRoutes"));
+app.use("/company/sources", require("./routes/company/appliedSourceRoutes"));
+app.use("/company/discovered", require("./routes/company/discoveredSourceRoutes"));
 
-// misc (for fetching config from db)
-const statusRoutes = require("./routes/status/statusRoutes");
+// Analytics
+app.use("/analytics/dashboard", require("./routes/analytic/dashboardRoutes"));
+app.use("/analytic/metrics", require("./routes/analytic/metricsRoutes"));
+app.use("/analytic/graphs", require("./routes/analytic/graphsRoutes"));
 
-// upload
-const uploadRoutes = require("./routes/upload/uploadRoutes");
+// Counter
+app.use("/counter", require("./routes/counter/applicantCounterRoute"));
 
-// industries
-const industryRoutes = require("./routes/jobs/industryRoutes");
+// Notification
+app.use("/notification", require("./routes/notification/notificationRoutes"));
 
-// jobs
-const jobRoutes = require("./routes/jobs/jobRoutes");
-const officeRoutes = require("./routes/jobs/officeRoutes");
+// Email
+app.use("/email", require("./routes/email/emailRoutes"));
 
-// setups
-const setupRoutes = require("./routes/jobs/setupRoutes");
+// User
+app.use("/user", require("./routes/user/userRoutes"));
+app.use("/user-configuration", require("./routes/userConfiguration/userConfigurationRoutes"));
 
-// configuration
-const userConfigurationRoutes = require("./routes/userConfiguration/userConfigurationRoutes");
+// Misc
+app.use("/status", require("./routes/status/statusRoutes"));
+app.use("/upload", require("./routes/upload/uploadRoutes"));
 
-// status history
-const statusHistoryRoutes = require("./routes/applicant/statHistoryRoutes");
+// Jobs & Industries
+app.use("/industries", require("./routes/jobs/industryRoutes"));
+app.use("/jobs", require("./routes/jobs/jobRoutes"));
+app.use("/setups", require("./routes/jobs/setupRoutes"));
 
-//dashboard
-const dashboardRoutes = require("./routes/analytic/dashboardRoutes");
+// Status History
+app.use("/applicant/status-history", require("./routes/applicant/statHistoryRoutes"));
 
-//password - for password reset
-const passwordRoutes = require("./routes/password/passwordRoutes");
+// Password
+app.use("/password", require("./routes/password/passwordRoutes"));
 
-// Routes
-app.use("/applicants/pending", pendingApplicantRoutes);
-app.use("/analytics/dashboard", dashboardRoutes);
-app.use("/applicant/status-history", statusHistoryRoutes);
-app.use("/applicants", applicantRoutes);
-app.use("/applicants/add", addApplicantRoutes);
-app.use("/applicants/check", checkApplicantRoutes);
-app.use("/applicant/edit", editApplicantRoutes);
-app.use("/applicant/update/status", updateStatusRoutes);
-app.use("/counter", applicantCounterRoutes);
-app.use("/interview", interviewRoutes);
-app.use("/auth", loginRoutes);
-app.use("/auth", registerRoutes);
-app.use("/notification", notificationRoutes);
-app.use("/analytic/metrics", metricRoutes);
-app.use("/analytic/graphs", graphsRoutes);
-app.use("/email", emailRoutes);
-app.use("/company", positionRoutes);
-app.use("/company/sources", appliedSourceRoutes);
-app.use("/company/discovered", discoveredSourceRoutes);
-app.use("/user", userRoutes);
-app.use("/status", statusRoutes);
-app.use("/upload", uploadRoutes);
-app.use("/industries", industryRoutes);
-app.use("/offices", officeRoutes);
-app.use("/jobs", jobRoutes);
-app.use("/setups", setupRoutes);
-app.use("/user-configuration", userConfigurationRoutes);
-app.use("/password", passwordRoutes);
+// Calendar
+app.use("/api/calendar", require("./routes/calendar/calendarRoutes"));
 
-app.use("/applicants/delete", deleteApplicantRoutes);
-
+// --------------------- Protected Route --------------------- //
 const verifyToken = require("./middlewares/verifyToken");
-
 app.get("/protected", verifyToken, (req, res) => {
   const { user_id, user_email } = req.user;
-
-  res.json({ message: "okay" });
+  res.json({ message: "okay", user_id, user_email });
 });
 
-// Function for testing if connected to the database and call it when server starts
-const testConnection = async () => {
+// --------------------- Database Test --------------------- //
+(async () => {
   try {
-    const results = await pool.query("SELECT * FROM ats_applicants");
-    console.log("connected to database");
+    await pool.query("SELECT 1");
+    console.log("✅ Connected to database");
   } catch (error) {
-    console.error(error.message);
+    console.error("❌ DB Connection Error:", error.message);
   }
-};
-
-testConnection();
+})();
 
 module.exports = app;
