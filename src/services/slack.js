@@ -41,31 +41,26 @@ const formatSource = (source) => {
 };
 
 // Format employment history
-// Format employment history - FIXED VERSION
+// Simplified formatEmploymentHistory function
 const formatEmploymentHistory = (isFirstJob, reasonForLeaving) => {
-    // Handle different possible representations of boolean
-    const isFirstTimeJobSeeker = 
-        isFirstJob === true || 
-        isFirstJob === 1 || 
-        isFirstJob === '1' || 
-        isFirstJob === 'true';
-    
-    const hasWorkExperience = 
-        isFirstJob === false || 
-        isFirstJob === 0 || 
-        isFirstJob === '0' || 
-        isFirstJob === 'false';
-
-    if (isFirstTimeJobSeeker) {
-        return "*First-time job seeker*";
-    } else if (hasWorkExperience) {
+    // Handle null/undefined cases
+    if (isFirstJob === null || isFirstJob === undefined) {
         return reasonForLeaving 
             ? `*Previously employed* — Reason for leaving: ${reasonForLeaving}`
-            : "*Experienced*";
+            : "*Employment history not specified*";
     }
-    return "*Employment history not specified*";
+    
+    // Convert to boolean for easier handling
+    const isFirstTime = Boolean(isFirstJob);
+    
+    if (isFirstTime) {
+        return "*First-time job seeker*";
+    } else {
+        return reasonForLeaving 
+            ? `*Previously employed* — Reason for leaving: ${reasonForLeaving}`
+            : "*Experienced (no reason for leaving specified)*";
+    }
 };
-
 // Format phone number for display
 const formatPhoneNumber = (phone) => {
     if (!phone) return "Not provided";
@@ -121,6 +116,9 @@ module.exports.newApplicant = async (applicant_id) => {
         }
         
         applicant = applicant[0];
+
+        // Debug: Log the applicant data to see what fields are available
+        console.log("Applicant data:", JSON.stringify(applicant, null, 2));
 
         // Remove any # prefix from channel name
         const channelName = (process.env.SLACK_CHANNEL_APPLICANT || "kriya-ats-applicants").replace(/^#/, '');
@@ -178,16 +176,19 @@ module.exports.newApplicant = async (applicant_id) => {
             }
         ];
 
-        // Add employment history section
-        if (applicant.is_first_job !== undefined || applicant.reason_for_leaving) {
-            blocks.push({
-                type: "section",
-                text: {
-                    type: "mrkdwn",
-                    text: formatEmploymentHistory(applicant.is_first_job, applicant.reason_for_leaving)
-                }
-            });
-        }
+        // SIMPLIFIED: Always add employment history section with better field checking
+        const employmentInfo = formatEmploymentHistory(
+            applicant.is_first_job, 
+            applicant.reason_for_leaving
+        );
+        
+        blocks.push({
+            type: "section",
+            text: {
+                type: "mrkdwn",
+                text: `*Employment History:*\n${employmentInfo}`
+            }
+        });
 
         // Add CV link if available
         if (applicant.cv_link) {
@@ -199,7 +200,6 @@ module.exports.newApplicant = async (applicant_id) => {
                 }
             });
         }
-
 
         // Add action buttons if FRONTEND_URL is available
         if (process.env.FRONTEND_URL) {
@@ -220,7 +220,7 @@ module.exports.newApplicant = async (applicant_id) => {
         }
 
         // Fallback text for non-rich clients
-        const fallbackText = `New Applicant: ${applicantName} applied for ${positionApplied}. Email: ${applicant.email_1}, Phone: ${applicant.mobile_number_1}`;
+        const fallbackText = `New Applicant: ${applicantName} applied for ${positionApplied}. Email: ${applicant.email_1}, Phone: ${applicant.mobile_number_1}, Employment: ${employmentInfo}`;
 
         await app.client.chat.postMessage({
             token: process.env.SLACK_BOT_TOKEN,
