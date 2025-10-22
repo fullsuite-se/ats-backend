@@ -23,7 +23,7 @@ const emailSignature = (userData) => {
                     <p style="margin: 5px 0; font-size: 14px;">${jobTitle} | <a href="${companyWebsite}" style="color: #008080; text-decoration: none;">${companyName}</a></p>
                     <p style="margin: 5px 0; font-size: 14px;">${contactNumber} ${contactNumber && email ? '|' : ''} ${email}</p>
                     <p style="font-size: 12px; color: #777; margin-top: 10px; font-style: italic;">
-                        Confidentiality Notice: This email and any attachments are confidential and intended solely for the use of the individual to whom they are addressed.
+                        Confidentiality Notice: This email and any attachments are confidential and intended solely for the use of the individual to whom they are addressed. Unauthorized use or disclosure is prohibited.
                     </p>
                 </div>
             </div>
@@ -34,10 +34,10 @@ const emailSignature = (userData) => {
 // Enhanced HTML processing function with applicant data replacement
 function processEmailContent(htmlContent, applicantData) {
     if (!htmlContent) return '';
-    
+
     // Replace placeholder with actual applicant name
     let processedContent = htmlContent.replace(/&lt;Applicant's Name&gt;|&lt;Applicant's Name&gt;|Applicant's Name/g, applicantData.first_name);
-    
+
     // Process the HTML for email compatibility
     processedContent = processedContent
         // Replace empty paragraphs with proper spacing
@@ -149,11 +149,11 @@ function createEmailTemplate(content, signature) {
 const getSmtpCredentials = (userData) => {
     const email = userData?.user_email || process.env.SMTP_EMAIL_DEFAULT;
     const password = userData?.app_password || process.env.SMTP_PASSWORD_DEFAULT;
-    
+
     if (!email || !password) {
         throw new Error('SMTP credentials not found. Please check environment variables or user data.');
     }
-    
+
     return { email_user: email, email_pass: password };
 };
 
@@ -189,66 +189,66 @@ exports.emailTemplates = async (req, res) => {
 };
 
 exports.emailApplicant = async (req, res) => {
-  try {
-    let { applicant_id, user_id, email_subject, email_body } = req.body;
+    try {
+        let { applicant_id, user_id, email_subject, email_body } = req.body;
 
-    if (!applicant_id || !email_subject || !email_body) {
-      return res.status(400).json({ message: "Missing required fields" });
+        if (!applicant_id || !email_subject || !email_body) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        let applicantData = await applicantModel.getApplicant(applicant_id);
+        applicantData = applicantData[0];
+
+        const userData = await userModel.getUserInfo(user_id);
+
+        const recipientEmails = [
+            applicantData.email_1,
+            applicantData.email_2,
+            applicantData.email_3,
+        ].filter(Boolean);
+
+        // Process the email body with applicant data
+        const processedEmailBody = processEmailContent(email_body, applicantData);
+        const emailSignatureString = emailSignature(userData);
+
+        // Create the final email HTML with proper structure
+        const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
+
+        const attachments = req.files
+            ? req.files.map((file) => ({
+                filename: file.originalname,
+                content: file.buffer,
+            }))
+            : [];
+
+        // Get SMTP credentials with fallback
+        const smtpCredentials = getSmtpCredentials(userData);
+
+        // Create mail options with proper encoding
+        const mailOptions = {
+            from: `"${userData.company_name}" <${smtpCredentials.email_user}>`,
+            to: recipientEmails,
+            cc: "hireme@getfullsuite.com",
+            bcc: userData.user_email,
+            subject: email_subject,
+            html: finalEmailBody,
+            encoding: 'utf-8',
+            headers: {
+                'Content-Type': 'text/html; charset=UTF-8',
+                'Content-Transfer-Encoding': 'quoted-printable'
+            }
+        };
+
+        // create transporter
+        const transporter = createTransporter(smtpCredentials);
+
+        const info = await transporter.sendMail(mailOptions);
+
+        res.status(200).json({ message: "Email sent successfully", info: info.response });
+    } catch (error) {
+        console.error("Error sending email:", error);
+        res.status(500).json({ message: "Internal server error", error: error.message });
     }
-
-    let applicantData = await applicantModel.getApplicant(applicant_id);
-    applicantData = applicantData[0];
-
-    const userData = await userModel.getUserInfo(user_id);
-
-    const recipientEmails = [
-      applicantData.email_1,
-      applicantData.email_2,
-      applicantData.email_3,
-    ].filter(Boolean);
-
-    // Process the email body with applicant data
-    const processedEmailBody = processEmailContent(email_body, applicantData);
-    const emailSignatureString = emailSignature(userData);
-    
-    // Create the final email HTML with proper structure
-    const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
-
-    const attachments = req.files
-      ? req.files.map((file) => ({
-          filename: file.originalname,
-          content: file.buffer,
-        }))
-      : [];
-
-    // Get SMTP credentials with fallback
-    const smtpCredentials = getSmtpCredentials(userData);
-
-    // Create mail options with proper encoding
-    const mailOptions = {
-      from: `"${userData.company_name}" <${smtpCredentials.email_user}>`,
-      to: recipientEmails,
-      cc: "hireme@getfullsuite.com",
-      bcc: userData.user_email,
-      subject: email_subject,
-      html: finalEmailBody,
-      encoding: 'utf-8',
-      headers: {
-        'Content-Type': 'text/html; charset=UTF-8',
-        'Content-Transfer-Encoding': 'quoted-printable'
-      }
-    };
-
-    // create transporter
-    const transporter = createTransporter(smtpCredentials);
-
-    const info = await transporter.sendMail(mailOptions);
-
-    res.status(200).json({ message: "Email sent successfully", info: info.response });
-  } catch (error) {
-    console.error("Error sending email:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
-  }
 };
 
 // the function that actually sends the test assessment
@@ -256,10 +256,10 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
     try {
         let applicantData = await applicantModel.getApplicant(applicant_id);
         applicantData = applicantData[0];
-        
+
 
         const userData = await userModel.getUserInfo(user_id);
-       
+
         let email_subject = `Test Assessment`;
         let email_body = `
             <div>
@@ -289,14 +289,14 @@ exports.emailTestAssessment = async (applicant_id, user_id) => {
         `;
 
         const recipientEmails = [
-            applicantData.email_1, 
-            applicantData.email_2, 
+            applicantData.email_1,
+            applicantData.email_2,
             applicantData.email_3
         ].filter(Boolean);
 
         const processedEmailBody = processEmailContent(email_body, applicantData);
         const emailSignatureString = emailSignature(userData);
-        
+
         const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
 
         // Get SMTP credentials with fallback
@@ -392,7 +392,7 @@ exports.notifyUsersNewApplicant = async (applicant_id) => {
 
         const processedEmailBody = processEmailContent(emailBody, applicantData);
         const emailSignatureString = emailSignature(userData);
-        
+
         const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
 
         // Get SMTP credentials with fallback
@@ -433,7 +433,7 @@ exports.emailApplicantGuest = async (applicant, email_subject, email_body) => {
         const recipientEmails = [applicant.email_1];
         const processedEmailBody = processEmailContent(email_body, applicant);
         const emailSignatureString = emailSignature(userData);
-        
+
         const finalEmailBody = createEmailTemplate(processedEmailBody, emailSignatureString);
 
         // Get SMTP credentials with fallback
